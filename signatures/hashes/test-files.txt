@@ -1,0 +1,5 @@
+# Bastion hash signatures: one SHA-256 per line, optional detection name after a space.
+# Downloaded feeds (MalwareBazaar etc.) land in %ProgramData%\Bastion\Signatures\hashes.
+#
+# EICAR anti-virus test file (harmless, used by every antivirus to test detection)
+275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f EICAR-Test-File

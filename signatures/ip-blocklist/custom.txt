@@ -1,0 +1,3 @@
+# Command-and-control IP blocklists. One IP per line, # for comments.
+# Bastion downloads abuse.ch Feodo Tracker automatically into %ProgramData%\Bastion\Signatures\ip-blocklist.
+# Put your own lists here as *.txt files.
