@@ -83,6 +83,12 @@ public sealed partial class LicenseViewModel : ObservableObject
         Apply(result.Status);
     }
 
+    private void ShowError(Exception e)
+    {
+        Message = e is IOException ? "Die Datei konnte nicht gelesen werden: " + e.Message : e.Message;
+        MessageIsError = true;
+    }
+
     partial void OnKeyInputChanged(string value)
     {
         // Format as BSTN-XXXX-XXXX-XXXX-XXXX while typing.
@@ -103,6 +109,10 @@ public sealed partial class LicenseViewModel : ObservableObject
             if (result.Success)
                 KeyInput = "";
         }
+        catch (Exception e)
+        {
+            ShowError(e);
+        }
         finally
         {
             Busy = false;
@@ -120,10 +130,9 @@ public sealed partial class LicenseViewModel : ObservableObject
         {
             Show(await _session.Backend.ImportLicenseAsync(await File.ReadAllTextAsync(dialog.FileName)));
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            Message = "Die Datei konnte nicht gelesen werden: " + e.Message;
-            MessageIsError = true;
+            ShowError(e);
         }
         finally
         {
@@ -149,6 +158,10 @@ public sealed partial class LicenseViewModel : ObservableObject
         {
             Show(await _session.Backend.DeactivateLicenseAsync());
         }
+        catch (Exception e)
+        {
+            ShowError(e);
+        }
         finally
         {
             Busy = false;
@@ -162,6 +175,10 @@ public sealed partial class LicenseViewModel : ObservableObject
         try
         {
             Show(await _session.Backend.RefreshLicenseAsync());
+        }
+        catch (Exception e)
+        {
+            ShowError(e);
         }
         finally
         {

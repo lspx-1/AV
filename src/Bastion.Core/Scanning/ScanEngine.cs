@@ -20,7 +20,7 @@ public sealed class ScanEngine(IReadOnlyList<IDetector> detectors, Func<ScanOpti
         {
             context = FileScanContext.Load(path, opts.MaxContentBytes);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             return FileScanResult.Failed(path, e.Message);
         }

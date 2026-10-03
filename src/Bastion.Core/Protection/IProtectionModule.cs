@@ -83,6 +83,22 @@ public abstract class ProtectionModuleBase(IProtectionContext context) : IProtec
         }
     }
 
+    /// <summary>
+    /// Runs a callback from a timer, file watcher or WMI event. An exception there would otherwise end the
+    /// whole service process (and with it every connection to the app), so it is logged and swallowed.
+    /// </summary>
+    protected void Safe(string what, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception e)
+        {
+            Context.Log($"{Name}: {what} fehlgeschlagen: {e.GetType().Name}: {e.Message}");
+        }
+    }
+
     protected abstract void OnStart();
     protected abstract void OnStop();
 

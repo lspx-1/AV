@@ -199,7 +199,16 @@ public sealed class PipeServer(IBastionBackend backend, Action<string> log) : ID
 
     private void Broadcast(string name, object data)
     {
-        var message = new PipeMessage { Event = name, Data = JsonSerializer.SerializeToElement(data, JsonStore.Options) };
+        PipeMessage message;
+        try
+        {
+            message = new PipeMessage { Event = name, Data = JsonSerializer.SerializeToElement(data, JsonStore.Options) };
+        }
+        catch (Exception e)
+        {
+            log($"Ereignis {name} konnte nicht gesendet werden: {e.Message}");
+            return;
+        }
         List<Connection> targets;
         lock (_lock)
             targets = [.. _connections];
