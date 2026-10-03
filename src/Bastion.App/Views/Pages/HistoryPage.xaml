@@ -22,6 +22,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ComboBox MinWidth="170" ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter}" />
             <ui:TextBox
@@ -29,7 +30,14 @@
                 Margin="12,0,0,0"
                 Icon="{ui:SymbolIcon Search24}"
                 PlaceholderText="Suchen"
-                Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+                Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
+            <ui:Button
+                Grid.Column="2"
+                Margin="12,0,0,0"
+                Appearance="Secondary"
+                Command="{Binding ClearCommand}"
+                Content="Verlauf löschen"
+                Icon="{ui:SymbolIcon Delete24}" />
         </Grid>
 
         <Border Grid.Row="2" Style="{StaticResource GlassPanel}">
@@ -39,11 +47,31 @@
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="Keine Ereignisse für diesen Filter."
                     Visibility="{Binding Events.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=invert}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Events}">
+                <ItemsControl
+                    ItemsSource="{Binding Events}"
+                    ScrollViewer.CanContentScroll="True"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.ScrollUnit="Pixel"
+                    VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ItemsControl.Template>
+                        <ControlTemplate TargetType="ItemsControl">
+                            <ScrollViewer
+                                CanContentScroll="True"
+                                Focusable="False"
+                                HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:EventItemViewModel}">
-                                <Border x:Name="Row" Padding="16,12" Style="{StaticResource RowDivider}">
+                                <Border x:Name="Row" Padding="16,10" Style="{StaticResource RowDivider}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -55,7 +83,7 @@
                                                 <TextBlock Margin="0,0,140,0" Style="{StaticResource RowTitle}" Text="{Binding Title}" />
                                                 <TextBlock HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Meta}" />
                                             </Grid>
-                                            <TextBlock Style="{StaticResource RowDetail}" Text="{Binding Detail}" TextTrimming="None" TextWrapping="Wrap" Visibility="{Binding Detail, Converter={StaticResource NullToVisibility}}" />
+                                            <TextBlock Style="{StaticResource RowDetail}" MaxHeight="34" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding Detail}" Visibility="{Binding Detail, Converter={StaticResource NullToVisibility}}" />
                                             <TextBlock Style="{StaticResource MonoDetail}" Text="{Binding Target}" ToolTip="{Binding Target}" Visibility="{Binding Target, Converter={StaticResource NullToVisibility}}" />
                                             <TextBlock
                                                 Margin="0,6,0,0"
@@ -90,8 +118,7 @@
                                 </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                </ItemsControl>
             </Grid>
         </Border>
     </Grid>

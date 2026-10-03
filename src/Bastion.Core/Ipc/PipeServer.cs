@@ -172,6 +172,7 @@ public sealed class PipeServer(IBastionBackend backend, Action<string> log) : ID
             nameof(IBastionBackend.CancelScanAsync) => await Done(backend.CancelScanAsync()),
             nameof(IBastionBackend.GetEventsAsync) => await backend.GetEventsAsync(Arg<int>(0)),
             nameof(IBastionBackend.ExecuteEventActionAsync) => await backend.ExecuteEventActionAsync(Arg<Guid>(0), Arg<string>(1)),
+            nameof(IBastionBackend.ClearHistoryAsync) => await backend.ClearHistoryAsync(),
             nameof(IBastionBackend.GetQuarantineAsync) => await backend.GetQuarantineAsync(),
             nameof(IBastionBackend.RestoreQuarantineAsync) => await backend.RestoreQuarantineAsync(Arg<Guid>(0), Arg<bool>(1)),
             nameof(IBastionBackend.DeleteQuarantineAsync) => await backend.DeleteQuarantineAsync(Arg<Guid>(0)),

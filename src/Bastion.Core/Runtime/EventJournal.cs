@@ -72,6 +72,34 @@ public sealed class EventJournal
             return _events.Take(max).ToList();
     }
 
+    /// <summary>Drops everything that is not an open finding, in memory and on disk.</summary>
+    public int Clear()
+    {
+        lock (_lock)
+        {
+            var keep = _events.Where(e => !e.IsResolved && e.Actions.Count > 0).ToList();
+            var removed = _events.Count - keep.Count;
+            _events.Clear();
+            foreach (var e in keep)
+                _events.AddLast(e);
+            try
+            {
+                if (Directory.Exists(_dir))
+                {
+                    foreach (var file in Directory.EnumerateFiles(_dir, "events-*.jsonl"))
+                        File.Delete(file);
+                    // Re-write the open findings (oldest first) so they survive a restart.
+                    foreach (var e in keep.AsEnumerable().Reverse())
+                        Append(e);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+            return removed;
+        }
+    }
+
     public int OpenThreats()
     {
         lock (_lock)
