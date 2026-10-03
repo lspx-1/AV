@@ -53,7 +53,7 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
         _journal.Updated += e => EventRaised?.Invoke(e);
 
         Vault = new QuarantineVault(paths.Quarantine);
-        License = new LicenseManager(paths.LicenseFile, LicenseCodec.LoadEmbeddedPublicKey(), CreateLicenseClient);
+        License = new LicenseManager(paths.LicenseFile, LicenseCodec.LoadPublicKey(), CreateLicenseClient);
         License.Changed += s =>
         {
             LicenseChanged?.Invoke(s);

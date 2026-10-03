@@ -59,6 +59,35 @@ public static class LicenseCodec
         return pem.Contains("BEGIN PUBLIC KEY", StringComparison.Ordinal) ? ImportPem(pem) : null;
     }
 
+    /// <summary>File name of the public key next to Bastion.exe (installed by scripts/setup-licensing.ps1 or the License Manager).</summary>
+    public const string InstalledKeyFileName = "license-public-key.pem";
+
+    /// <summary>
+    /// The license public key: built into this build, or else installed next to the program.
+    /// The install folder (Program Files) is admin-only, so only an administrator can change it.
+    /// </summary>
+    public static ECDsa? LoadPublicKey(string? installDirectory = null)
+    {
+        var embedded = LoadEmbeddedPublicKey();
+        if (embedded is not null)
+            return embedded;
+        var file = Path.Combine(installDirectory ?? AppContext.BaseDirectory, InstalledKeyFileName);
+        try
+        {
+            if (File.Exists(file))
+            {
+                var pem = File.ReadAllText(file);
+                if (pem.Contains("BEGIN PUBLIC KEY", StringComparison.Ordinal))
+                    return ImportPem(pem);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or CryptographicException)
+        {
+            // An unreadable key file means "no key"; the license page explains how to install one.
+        }
+        return null;
+    }
+
     private static string Base64Url(byte[] data) =>
         Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 

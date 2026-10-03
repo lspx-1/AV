@@ -172,3 +172,30 @@ public class LicensingTests
         }, key);
     }
 }
+
+public class InstalledPublicKeyTests
+{
+    [Fact]
+    public void PublicKeyIsLoadedFromInstallFolder()
+    {
+        var dir = TestFiles.TempDir();
+        Assert.Null(LicenseCodec.LoadPublicKey(dir));
+
+        using var key = LicenseCodec.CreateKeyPair();
+        File.WriteAllText(Path.Combine(dir, LicenseCodec.InstalledKeyFileName), key.ExportSubjectPublicKeyInfoPem());
+        using var loaded = LicenseCodec.LoadPublicKey(dir);
+        Assert.NotNull(loaded);
+
+        var token = LicenseCodec.Sign(new LicenseDocument { Key = LicenseKey.Generate(), Licensee = "A", IssuedAt = DateTimeOffset.UtcNow }, key);
+        Assert.True(LicenseCodec.TryVerify(token, loaded!, out _));
+    }
+
+    [Fact]
+    public void PrivateKeyFileIsNotAcceptedAsPublicKey()
+    {
+        var dir = TestFiles.TempDir();
+        using var key = LicenseCodec.CreateKeyPair();
+        File.WriteAllText(Path.Combine(dir, LicenseCodec.InstalledKeyFileName), key.ExportECPrivateKeyPem());
+        Assert.Null(LicenseCodec.LoadPublicKey(dir));
+    }
+}

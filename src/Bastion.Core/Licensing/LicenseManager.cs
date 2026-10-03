@@ -162,7 +162,7 @@ public sealed class LicenseManager
     private LicenseOperationResult Store(string token, bool online, string successMessage)
     {
         if (_publicKey is null)
-            return Fail("Dieser Build hat keinen Lizenz-Schlüssel eingebaut. Siehe README, Abschnitt Licensing.");
+            return Fail("Bastion hat noch keinen Lizenz-Prüfschlüssel. Installiere ihn mit dem Bastion License Manager („In Bastion installieren“) oder mit scripts\\setup-licensing.ps1.");
         if (!LicenseCodec.TryVerify(token, _publicKey, out var doc) || doc is null)
             return Fail("Die Lizenz ist beschädigt oder nicht echt (Signatur stimmt nicht).");
         if (doc.DeviceId is not null && doc.DeviceId != _deviceId)

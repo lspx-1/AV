@@ -90,21 +90,27 @@ dotnet run --project src/Bastion.App          # app mode, no install needed
 
 Bastion is MIT-licensed open source. **Pro** unlocks comfort features (scheduled scans, own rules, hourly updates) and supports the project. Protection is the same in Free and Pro.
 
-### Set up your keys (once)
+### Bastion License Manager
+
+The easiest way: download `Bastion-LicenseManager-…-win-x64.zip` from the release, unpack it and start `BastionLicenseManager.exe`.
+
+1. **Schlüssel** → *Neuen Schlüssel erstellen* (or *Vorhandenen importieren* if you already have `keys/license-private.pem` from the KeyGen CLI).
+2. *Sicherung exportieren* and keep that file offline. It is your **private** key: never share or commit it. Without it you cannot issue licenses anymore.
+3. *In Bastion auf diesem PC installieren* (asks for admin rights). This copies the **public** key into `C:\Program Files\Bastion` and restarts Bastion. Do this on every PC that should accept your licenses, or run
+   `setup-licensing.ps1 -PublicKey license-public-key.pem` as administrator there.
+4. **Lizenz ausstellen**: enter a name, devices and duration → you get a key like `BSTN-7Q4M-2D9K-P1XA-K2XR` and a `.bastionlic` file.
+   In Bastion: *Lizenz → Lizenzdatei importieren*.
+
+All issued licenses are listed under **Ausgestellt** (search, save the file again, renew for a year).
+
+### Command line (KeyGen)
 
 ```bash
-dotnet run --project tools/Bastion.KeyGen -- init
-```
-
-This creates `keys/license-private.pem` (**secret**, git-ignored, never commit it) and `src/Bastion.Core/Licensing/license-public-key.pem`, which is built into the app. Rebuild afterwards.
-
-### Issue a license
-
-```bash
+dotnet run --project tools/Bastion.KeyGen -- init      # key pair; also writes the public key into Bastion.Core
 dotnet run --project tools/Bastion.KeyGen -- issue --name "Max Muster" --email max@example.com --seats 3 --days 365
 ```
 
-You get a key like `BSTN-7Q4M-2D9K-P1XA-K2XR` and a signed `.bastionlic` file. The customer imports the file on the license page, or, once a license server runs, simply types the key.
+`init` writes `keys/license-private.pem` (git-ignored) and `src/Bastion.Core/Licensing/license-public-key.pem`. If you commit the public key, it is built into every release and no installation step is needed.
 
 ### License server
 
@@ -117,10 +123,11 @@ Online licenses keep working for 30 days without a connection.
 src/Bastion.Core/      scanner, detectors, protection modules, quarantine, licensing, IPC
 src/Bastion.Service/   Windows service hosting the engine (LocalSystem)
 src/Bastion.App/       WPF app (WPF-UI), tray icon, notifications
-tools/Bastion.KeyGen/  license key pair & license file generator
+tools/Bastion.KeyGen/  license key CLI
+tools/Bastion.LicenseManager/  license manager app (create keys, issue and track licenses)
 tests/                 xUnit tests
 signatures/            shipped hashes, rules and IP lists
-scripts/               install.ps1 / uninstall.ps1
+scripts/               install.ps1 / uninstall.ps1 / setup-licensing.ps1
 docs/                  architecture, licensing API, rule syntax, design mockup
 ```
 
@@ -140,7 +147,8 @@ Without a kernel driver, which needs Microsoft's driver signing, Bastion
 - [ ] AMSI provider for script scanning (PowerShell, VBScript)
 - [ ] ETW-based process and file telemetry
 - [ ] English UI
-- [ ] License server and admin tool
+- [x] License manager app
+- [ ] License server
 - [ ] MSI installer
 
 ## Contributing

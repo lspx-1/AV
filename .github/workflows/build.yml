@@ -39,6 +39,14 @@ jobs:
           dotnet publish src/Bastion.Service -c Release -r win-x64 --self-contained true -o $out
           Copy-Item scripts/install.ps1, scripts/uninstall.ps1 $out
           Copy-Item README.md, LICENSE $out
+          Copy-Item scripts/setup-licensing.ps1 $out
+          dotnet publish tools/Bastion.LicenseManager -c Release -r win-x64 --self-contained true -o publish/LicenseManager
+
+      - name: Upload License Manager
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bastion-LicenseManager-win-x64
+          path: publish/LicenseManager
 
       - name: Upload build
         uses: actions/upload-artifact@v4
@@ -49,12 +57,16 @@ jobs:
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
-        run: Compress-Archive -Path publish/Bastion/* -DestinationPath "Bastion-${{ github.ref_name }}-win-x64.zip"
+        run: |
+          Compress-Archive -Path publish/Bastion/* -DestinationPath "Bastion-${{ github.ref_name }}-win-x64.zip"
+          Compress-Archive -Path publish/LicenseManager/* -DestinationPath "Bastion-LicenseManager-${{ github.ref_name }}-win-x64.zip"
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Bastion-${{ github.ref_name }}-win-x64.zip
+          files: |
+            Bastion-${{ github.ref_name }}-win-x64.zip
+            Bastion-LicenseManager-${{ github.ref_name }}-win-x64.zip
           # Keep the notes written on GitHub; only attach the build.
           generate_release_notes: false

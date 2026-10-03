@@ -1,0 +1,246 @@
+<ui:FluentWindow
+    x:Class="Bastion.LicenseManager.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:Bastion.LicenseManager"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Bastion License Manager"
+    Width="900"
+    Height="720"
+    MinWidth="760"
+    MinHeight="560"
+    ExtendsContentIntoTitleBar="True"
+    Icon="pack://application:,,,/Assets/bastion.ico"
+    WindowBackdropType="Acrylic"
+    WindowCornerPreference="Round"
+    WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <local:MainViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  Same tinted glass as Bastion  -->
+        <Border Grid.RowSpan="3" Background="#B30A131A" IsHitTestVisible="False" />
+        <Border Grid.RowSpan="3" IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="0.1,0.05" GradientOrigin="0.1,0.05" RadiusX="0.7" RadiusY="0.8">
+                    <GradientStop Offset="0" Color="#552AA7C9" />
+                    <GradientStop Offset="1" Color="#002AA7C9" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <ui:TitleBar Title="Bastion License Manager" Grid.Row="0">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/bastion.png" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <TabControl
+            Grid.Row="1"
+            Margin="24,4,24,0"
+            Background="Transparent"
+            SelectedIndex="{Binding SelectedTab}">
+
+            <!--  ISSUE  -->
+            <TabItem Header="Lizenz ausstellen">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,16,0,16">
+                        <ui:InfoBar
+                            Title="Noch kein Schlüssel"
+                            Margin="0,0,0,12"
+                            IsClosable="False"
+                            IsOpen="True"
+                            Message="Erstelle oder importiere im Tab „Schlüssel“ zuerst deinen Signaturschlüssel."
+                            Severity="Warning"
+                            Visibility="{Binding HasKey, Converter={x:Static local:Converters.FalseToVisible}}" />
+
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="Neue Pro-Lizenz" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="Erzeugt einen Lizenzschlüssel und eine signierte .bastionlic-Datei. Der Kunde importiert die Datei in Bastion unter Lizenz → „Lizenzdatei importieren“." />
+
+                                <TextBlock Style="{StaticResource Label}" Text="Name" />
+                                <ui:TextBox PlaceholderText="Max Muster" Text="{Binding Licensee, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Style="{StaticResource Label}" Text="E-Mail (optional)" />
+                                <ui:TextBox PlaceholderText="max@example.com" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="24" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Label}" Text="Geräte" />
+                                        <ui:NumberBox Maximum="100" Minimum="1" SmallChange="1" Value="{Binding Seats}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource Label}" Text="Laufzeit" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox VerticalAlignment="Center" Content="Unbegrenzt" IsChecked="{Binding Unlimited}" />
+                                            <ui:NumberBox
+                                                Width="140"
+                                                Margin="16,0,8,0"
+                                                IsEnabled="{Binding Unlimited, Converter={x:Static local:Converters.Not}}"
+                                                Maximum="3650"
+                                                Minimum="1"
+                                                SmallChange="30"
+                                                Value="{Binding Days}" />
+                                            <TextBlock VerticalAlignment="Center" Text="Tage" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Style="{StaticResource Label}" Text="An ein Gerät binden (optional)" />
+                                <ui:TextBox FontFamily="Cascadia Mono, Consolas" PlaceholderText="Geräte-ID, z. B. 9f3ca1e0b2c4d6e8" Text="{Binding DeviceId, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="Die Geräte-ID steht in Bastion unten auf der Lizenz-Seite. Leer lassen: Die Datei funktioniert auf jedem PC." />
+
+                                <TextBlock Style="{StaticResource Label}" Text="Notiz (nur für dich)" />
+                                <ui:TextBox PlaceholderText="z. B. bezahlt per PayPal am 03.10." Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <ui:Button
+                                    Margin="0,20,0,0"
+                                    Padding="20,10"
+                                    Appearance="Primary"
+                                    Command="{Binding IssueCommand}"
+                                    Content="Lizenz erstellen und speichern"
+                                    Icon="{ui:SymbolIcon Key24}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,16,0,0" Style="{StaticResource Panel}" Visibility="{Binding LastKey, Converter={x:Static local:Converters.NotNullToVisible}}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Hint}" Text="Zuletzt erstellter Lizenzschlüssel" />
+                                <TextBlock Margin="0,6,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="22" FontWeight="SemiBold" Text="{Binding LastKey}" />
+                                <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                                    <ui:Button Margin="0,0,8,0" Command="{Binding CopyLastKeyCommand}" Content="Schlüssel kopieren" Icon="{ui:SymbolIcon Copy24}" />
+                                    <ui:Button Command="{Binding OpenLastFolderCommand}" Content="Datei im Explorer zeigen" Icon="{ui:SymbolIcon Folder24}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!--  ISSUED  -->
+            <TabItem Header="Ausgestellt">
+                <Grid Margin="0,16,0,16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <ui:TextBox
+                        Margin="0,0,0,12"
+                        Icon="{ui:SymbolIcon Search24}"
+                        PlaceholderText="Name, E-Mail, Schlüssel oder Notiz suchen"
+                        Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+                    <Border Grid.Row="1" Padding="4" Style="{StaticResource Panel}">
+                        <ListView
+                            Background="Transparent"
+                            BorderThickness="0"
+                            ItemsSource="{Binding Licenses}"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            VirtualizingPanel.IsVirtualizing="True">
+                            <ListView.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:IssuedLicenseViewModel}">
+                                    <Grid Margin="6,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Licensee}" />
+                                            <TextBlock Margin="0,2,0,0" FontFamily="Cascadia Mono, Consolas" Text="{Binding Key}" />
+                                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="{Binding Details}" />
+                                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" FontStyle="Italic" Text="{Binding Note}" />
+                                            <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="{StaticResource WarnBrush}" Text="Abgelaufen" Visibility="{Binding Expired, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                                            <ui:Button Margin="0,0,6,0" Padding="8" Command="{Binding CopyCommand}" Icon="{ui:SymbolIcon Copy24}" ToolTip="Schlüssel kopieren" />
+                                            <ui:Button Margin="0,0,6,0" Padding="8" Command="{Binding SaveCommand}" Icon="{ui:SymbolIcon Save24}" ToolTip="Lizenzdatei erneut speichern" />
+                                            <ui:Button Margin="0,0,6,0" Padding="8" Command="{Binding RenewCommand}" Icon="{ui:SymbolIcon ArrowRepeatAll24}" ToolTip="Um ein Jahr verlängern (neue Datei)" Visibility="{Binding HasExpiry, Converter={StaticResource BoolToVisibility}}" />
+                                            <ui:Button Padding="8" Command="{Binding DeleteCommand}" Icon="{ui:SymbolIcon Delete24}" ToolTip="Aus Liste entfernen" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!--  KEY  -->
+            <TabItem Header="Schlüssel">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,16,0,16">
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="Signaturschlüssel" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="Mit dem privaten Schlüssel signierst du Lizenzen. Er ist für dein Windows-Konto verschlüsselt gespeichert und verlässt diesen PC nur als Sicherung, die du selbst exportierst." />
+
+                                <StackPanel Margin="0,16,0,0" Orientation="Horizontal" Visibility="{Binding HasKey, Converter={StaticResource BoolToVisibility}}">
+                                    <ui:SymbolIcon Margin="0,0,8,0" Foreground="{StaticResource OkBrush}" Symbol="CheckmarkCircle24" />
+                                    <TextBlock VerticalAlignment="Center" Text="Schlüssel vorhanden · Fingerabdruck " />
+                                    <TextBlock VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" FontWeight="SemiBold" Text="{Binding Fingerprint}" />
+                                </StackPanel>
+
+                                <WrapPanel Margin="0,16,0,0">
+                                    <ui:Button Margin="0,0,8,8" Appearance="Primary" Command="{Binding CreateKeyCommand}" Content="Neuen Schlüssel erstellen" Icon="{ui:SymbolIcon Add24}" />
+                                    <ui:Button Margin="0,0,8,8" Command="{Binding ImportKeyCommand}" Content="Vorhandenen importieren (license-private.pem)" Icon="{ui:SymbolIcon ArrowImport24}" />
+                                    <ui:Button Margin="0,0,8,8" Command="{Binding ExportBackupCommand}" Content="Sicherung exportieren" Icon="{ui:SymbolIcon Save24}" IsEnabled="{Binding HasKey}" />
+                                </WrapPanel>
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="Hast du schon mit bastion-keygen einen Schlüssel erstellt (keys\license-private.pem)? Dann importiere ihn, statt einen neuen zu erstellen." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,16,0,0" Style="{StaticResource Panel}" Visibility="{Binding HasKey, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="In Bastion installieren" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="Bastion braucht deinen öffentlichen Schlüssel, um deine Lizenzen zu prüfen. Er ist nicht geheim. Einmal pro PC, auf dem Bastion installiert ist (Administratorrechte nötig)." />
+                                <WrapPanel Margin="0,16,0,0">
+                                    <ui:Button Margin="0,0,8,8" Appearance="Primary" Command="{Binding InstallIntoBastionCommand}" Content="In Bastion auf diesem PC installieren" Icon="{ui:SymbolIcon ShieldKeyhole24}" />
+                                    <ui:Button Margin="0,0,8,8" Command="{Binding CopyPublicKeyCommand}" Content="Öffentlichen Schlüssel kopieren" Icon="{ui:SymbolIcon Copy24}" />
+                                </WrapPanel>
+                                <TextBox
+                                    Margin="0,8,0,0"
+                                    FontFamily="Cascadia Mono, Consolas"
+                                    FontSize="11.5"
+                                    IsReadOnly="True"
+                                    Text="{Binding PublicPem, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0" Style="{StaticResource Hint}" Text="{Binding KeyFolder, StringFormat='Gespeichert in: {0}'}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!--  Status line  -->
+        <TextBlock
+            Grid.Row="2"
+            Margin="24,8,24,16"
+            Text="{Binding Message}"
+            TextWrapping="Wrap">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource BadBrush}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+    </Grid>
+</ui:FluentWindow>

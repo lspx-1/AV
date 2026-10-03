@@ -58,11 +58,11 @@
             </Grid>
 
             <ui:InfoBar
-                Title="Kein Lizenz-Schlüssel eingebaut"
+                Title="Noch kein Lizenz-Prüfschlüssel"
                 Margin="0,0,0,16"
                 IsClosable="False"
                 IsOpen="{Binding PublicKeyMissing}"
-                Message="Dieser Build kann keine Lizenzen prüfen. Erzeuge mit dem KeyGen-Tool ein Schlüsselpaar und baue Bastion neu (siehe README)."
+                Message="Bastion kann noch keine Lizenzen prüfen. Öffne den Bastion License Manager und klicke unter „Schlüssel“ auf „In Bastion auf diesem PC installieren“."
                 Severity="Warning" />
 
             <!--  Details  -->
