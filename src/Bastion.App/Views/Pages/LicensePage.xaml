@@ -1,0 +1,182 @@
+<Page
+    x:Class="Bastion.App.Views.Pages.LicensePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Lizenz">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="660" Margin="40,24,40,40">
+
+            <!--  Plan  -->
+            <Grid Margin="0,0,0,26">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    x:Name="PlanMark"
+                    Width="68"
+                    Height="68"
+                    Margin="0,0,18,0"
+                    CornerRadius="16">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPro}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="15"
+                        FontWeight="Bold"
+                        Text="{Binding PlanBadge}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPro}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding PlanTitle}" />
+                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding PlanSubtitle}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <ui:InfoBar
+                Title="Kein Lizenz-Schlüssel eingebaut"
+                Margin="0,0,0,16"
+                IsClosable="False"
+                IsOpen="{Binding PublicKeyMissing}"
+                Message="Dieser Build kann keine Lizenzen prüfen. Erzeuge mit dem KeyGen-Tool ein Schlüsselpaar und baue Bastion neu (siehe README)."
+                Severity="Warning" />
+
+            <!--  Details  -->
+            <Border Style="{StaticResource GlassPanel}" Visibility="{Binding HasLicense, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid Margin="16,12">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Lizenziert für" />
+                        <TextBlock HorizontalAlignment="Right" Text="{Binding Licensee}" />
+                    </Grid>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Lizenzschlüssel" />
+                            <TextBlock HorizontalAlignment="Right" FontFamily="Cascadia Mono, Consolas" Text="{Binding MaskedKey}" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Gültig bis" />
+                            <TextBlock HorizontalAlignment="Right" Text="{Binding ValidUntil}" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Geräte" />
+                            <TextBlock HorizontalAlignment="Right" Text="{Binding SeatsText}" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Letzte Prüfung" />
+                            <TextBlock HorizontalAlignment="Right" Text="{Binding LastCheck}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+            <WrapPanel Margin="0,14,0,0" Visibility="{Binding HasLicense, Converter={StaticResource BoolToVisibility}}">
+                <ui:Button Margin="0,0,8,8" Command="{Binding CheckCommand}" Content="Status prüfen" Icon="{ui:SymbolIcon ArrowSync24}" />
+                <ui:Button Margin="0,0,8,8" Command="{Binding DeactivateCommand}" Content="Auf diesem Gerät deaktivieren" Foreground="{StaticResource BadBrush}" />
+            </WrapPanel>
+
+            <!--  Key entry  -->
+            <TextBlock Margin="4,24,0,8" FontWeight="SemiBold" Text="{Binding KeyLabel}" />
+            <Grid IsEnabled="{Binding Busy, Converter={StaticResource InverseBool}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:TextBox
+                    FontFamily="Cascadia Mono, Consolas"
+                    MaxLength="24"
+                    PlaceholderText="BSTN-XXXX-XXXX-XXXX-XXXX"
+                    Text="{Binding KeyInput, UpdateSourceTrigger=PropertyChanged}" />
+                <ui:Button
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Appearance="Primary"
+                    Command="{Binding ActivateCommand}"
+                    Content="Aktivieren" />
+            </Grid>
+            <StackPanel Margin="4,10,0,0" Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Du hast eine Lizenzdatei bekommen?" />
+                <ui:HyperlinkButton Padding="6,2" Command="{Binding ImportFileCommand}" Content="Lizenzdatei importieren" />
+            </StackPanel>
+            <TextBlock Margin="4,10,0,0" Text="{Binding Message}" TextWrapping="Wrap" Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource BadBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--  Free vs Pro  -->
+            <TextBlock Margin="4,32,0,8" Style="{StaticResource SectionHeader}" Text="FREE UND PRO" />
+            <Border Style="{StaticResource GlassPanel}">
+                <StackPanel>
+                    <Grid Margin="16,12">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Echtzeitschutz, alle Module, Scans, Quarantäne" />
+                        <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OkBrush}" Text="Free · Pro" />
+                    </Grid>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Netzwerk- und RAT-Erkennung" />
+                            <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OkBrush}" Text="Free · Pro" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Signatur-Updates" />
+                                <TextBlock Style="{StaticResource RowDetail}" Text="Free: wöchentlich · Pro: stündlich" />
+                            </StackPanel>
+                            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Text="Pro" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Geplante Scans" />
+                            <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Text="Pro" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="16,12" Style="{StaticResource RowDivider}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Eigene YARA-Regeln" />
+                            <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Text="Pro" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+            <TextBlock Margin="4,12,0,0" Style="{StaticResource RowDetail}" Text="{Binding DeviceText, StringFormat='Dieses Gerät: {0}'}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

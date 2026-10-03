@@ -1,0 +1,59 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Bastion.sln
+
+      - name: Build
+        run: dotnet build Bastion.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/Bastion.Core.Tests -c Release --no-build --logger "console;verbosity=normal"
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          $out = "publish/Bastion"
+          dotnet publish src/Bastion.App -c Release -r win-x64 --self-contained true -o $out
+          dotnet publish src/Bastion.Service -c Release -r win-x64 --self-contained true -o $out
+          Copy-Item scripts/install.ps1, scripts/uninstall.ps1 $out
+          Copy-Item README.md, LICENSE $out
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bastion-win-x64
+          path: publish/Bastion
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: Compress-Archive -Path publish/Bastion/* -DestinationPath "Bastion-${{ github.ref_name }}-win-x64.zip"
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Bastion-${{ github.ref_name }}-win-x64.zip
+          generate_release_notes: true
