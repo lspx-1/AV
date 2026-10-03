@@ -1,0 +1,98 @@
+<Page
+    x:Class="Bastion.App.Views.Pages.HistoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:Bastion.App.ViewModels"
+    Title="Verlauf">
+
+    <Grid MaxWidth="1000" Margin="40,8,40,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Verlauf" />
+            <TextBlock Style="{StaticResource PageSubtitle}" Text="Alles, was Bastion gefunden und getan hat. Offene Funde kannst du hier direkt entscheiden." />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ComboBox MinWidth="170" ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter}" />
+            <ui:TextBox
+                Grid.Column="1"
+                Margin="12,0,0,0"
+                Icon="{ui:SymbolIcon Search24}"
+                PlaceholderText="Suchen"
+                Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <Border Grid.Row="2" Style="{StaticResource GlassPanel}">
+            <Grid>
+                <TextBlock
+                    Margin="16,14"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Keine Ereignisse für diesen Filter."
+                    Visibility="{Binding Events.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=invert}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Events}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:EventItemViewModel}">
+                                <Border x:Name="Row" Padding="16,12" Style="{StaticResource RowDivider}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Margin="0,6,12,0" VerticalAlignment="Top" Fill="{Binding Severity, Converter={StaticResource SeverityToBrush}}" Style="{StaticResource Dot}" />
+                                        <StackPanel Grid.Column="1">
+                                            <Grid>
+                                                <TextBlock Margin="0,0,140,0" Style="{StaticResource RowTitle}" Text="{Binding Title}" />
+                                                <TextBlock HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Meta}" />
+                                            </Grid>
+                                            <TextBlock Style="{StaticResource RowDetail}" Text="{Binding Detail}" TextTrimming="None" TextWrapping="Wrap" Visibility="{Binding Detail, Converter={StaticResource NullToVisibility}}" />
+                                            <TextBlock Style="{StaticResource MonoDetail}" Text="{Binding Target}" ToolTip="{Binding Target}" Visibility="{Binding Target, Converter={StaticResource NullToVisibility}}" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{StaticResource OkBrush}"
+                                                Text="{Binding Resolution}"
+                                                Visibility="{Binding Resolution, Converter={StaticResource NullToVisibility}}" />
+                                            <ItemsControl Margin="0,8,0,0" IsEnabled="{Binding Busy, Converter={StaticResource InverseBool}}" ItemsSource="{Binding Actions}" Visibility="{Binding HasActions, Converter={StaticResource BoolToVisibility}}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:EventActionViewModel}">
+                                                        <ui:Button
+                                                            Margin="0,0,8,4"
+                                                            Appearance="{Binding Appearance}"
+                                                            Command="{Binding Command}"
+                                                            CommandParameter="{Binding Action}"
+                                                            Content="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+                                        <Setter TargetName="Row" Property="BorderThickness" Value="0" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

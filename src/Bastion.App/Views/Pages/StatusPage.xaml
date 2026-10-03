@@ -1,0 +1,329 @@
+<Page
+    x:Class="Bastion.App.Views.Pages.StatusPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:Bastion.App.ViewModels"
+    Title="Status">
+
+    <Page.Resources>
+        <!--  Breathing glow behind the status orb  -->
+        <Storyboard x:Key="Breathe" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation
+                Storyboard.TargetName="GlowScale"
+                Storyboard.TargetProperty="ScaleX"
+                From="0.94"
+                To="1.06"
+                Duration="0:0:2">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="GlowScale"
+                Storyboard.TargetProperty="ScaleY"
+                From="0.94"
+                To="1.06"
+                Duration="0:0:2">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Style x:Key="GlowStyle" TargetType="Ellipse">
+            <Setter Property="Fill">
+                <Setter.Value>
+                    <RadialGradientBrush>
+                        <GradientStop Offset="0.45" Color="{StaticResource GlowOkColor}" />
+                        <GradientStop Offset="1" Color="Transparent" />
+                    </RadialGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="{x:Static vm:ProtectionState.Limited}">
+                    <Setter Property="Fill">
+                        <Setter.Value>
+                            <RadialGradientBrush>
+                                <GradientStop Offset="0.45" Color="{StaticResource GlowWarnColor}" />
+                                <GradientStop Offset="1" Color="Transparent" />
+                            </RadialGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="{x:Static vm:ProtectionState.Threat}">
+                    <Setter Property="Fill">
+                        <Setter.Value>
+                            <RadialGradientBrush>
+                                <GradientStop Offset="0.45" Color="{StaticResource GlowBadColor}" />
+                                <GradientStop Offset="1" Color="Transparent" />
+                            </RadialGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StateIconStyle" TargetType="ui:SymbolIcon">
+            <Setter Property="Symbol" Value="Checkmark24" />
+            <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="{x:Static vm:ProtectionState.Limited}">
+                    <Setter Property="Symbol" Value="Warning24" />
+                    <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="{x:Static vm:ProtectionState.Threat}">
+                    <Setter Property="Symbol" Value="ShieldError24" />
+                    <Setter Property="Foreground" Value="{StaticResource BadBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid MaxWidth="980" Margin="40,8,40,40">
+            <StackPanel>
+
+                <!--  App mode hint  -->
+                <ui:InfoBar
+                    Title="App-Modus"
+                    Margin="0,0,0,12"
+                    IsClosable="False"
+                    IsOpen="{Binding IsServiceMode, Converter={StaticResource InverseBool}, Mode=OneWay}"
+                    Message="Der Bastion-Dienst ist nicht installiert. Der Schutz läuft nur, solange die App geöffnet ist (auch im Tray). Mit scripts\install.ps1 läuft er dauerhaft und mit allen Rechten."
+                    Severity="Informational"
+                    Visibility="{Binding IsServiceMode, Converter={StaticResource InverseBoolToVisibility}}" />
+
+                <!--  Status hero  -->
+                <StackPanel Margin="0,28,0,26" HorizontalAlignment="Center">
+                    <Grid
+                        Width="150"
+                        Height="150"
+                        Margin="0,0,0,22"
+                        HorizontalAlignment="Center">
+                        <Ellipse
+                            Width="230"
+                            Height="230"
+                            Margin="-40"
+                            IsHitTestVisible="False"
+                            RenderTransformOrigin="0.5,0.5"
+                            Style="{StaticResource GlowStyle}">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse
+                            Fill="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            Stroke="{DynamicResource CardStrokeColorDefaultBrush}"
+                            StrokeThickness="1" />
+                        <ui:SymbolIcon
+                            FontSize="64"
+                            Style="{StaticResource StateIconStyle}" />
+                    </Grid>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="32"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        Text="{Binding Headline}"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        MaxWidth="520"
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Center"
+                        FontSize="14"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="{Binding Subline}"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap" />
+
+                    <StackPanel
+                        Margin="0,24,0,0"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Visibility="{Binding ScanRunning, Converter={StaticResource InverseBoolToVisibility}}">
+                        <ui:Button
+                            Margin="0,0,10,0"
+                            Padding="18,9"
+                            Appearance="Primary"
+                            Command="{Binding QuickScanCommand}"
+                            Content="Schnellscan"
+                            Icon="{ui:SymbolIcon Search24}" />
+                        <ui:Button
+                            Padding="18,9"
+                            Command="{Binding FullScanCommand}"
+                            Content="Vollständiger Scan" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Width="440"
+                        Margin="0,20,0,0"
+                        Visibility="{Binding ScanRunning, Converter={StaticResource BoolToVisibility}}">
+                        <ProgressBar
+                            Height="4"
+                            IsIndeterminate="{Binding ScanIndeterminate}"
+                            Maximum="100"
+                            Value="{Binding ScanPercent}" />
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="{Binding ScanText}"
+                            TextTrimming="CharacterEllipsis" />
+                        <ui:Button
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Center"
+                            Command="{Binding CancelScanCommand}"
+                            Content="Abbrechen" />
+                    </StackPanel>
+                    <TextBlock
+                        Margin="0,14,0,0"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="{Binding ScanText}"
+                        Visibility="{Binding ScanRunning, Converter={StaticResource InverseBoolToVisibility}}" />
+                </StackPanel>
+
+                <!--  Facts  -->
+                <WrapPanel Margin="0,0,0,26" HorizontalAlignment="Center">
+                    <StackPanel Margin="14,0" Orientation="Horizontal">
+                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Signaturen " />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding SignaturesText}" />
+                    </StackPanel>
+                    <StackPanel Margin="14,0" Orientation="Horizontal">
+                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Heute geprüft " />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding ScannedTodayText}" />
+                    </StackPanel>
+                    <StackPanel Margin="14,0" Orientation="Horizontal">
+                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="In Quarantäne " />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding QuarantineCount}" />
+                    </StackPanel>
+                    <ui:HyperlinkButton
+                        Margin="10,-6,0,0"
+                        Padding="6,4"
+                        Command="{Binding UpdateSignaturesCommand}"
+                        Content="Jetzt aktualisieren"
+                        IsEnabled="{Binding IsUpdating, Converter={StaticResource InverseBool}}" />
+                </WrapPanel>
+
+                <!--  Two quiet lists  -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="SCHUTZ" />
+                        <Border Style="{StaticResource GlassPanel}">
+                            <ItemsControl ItemsSource="{Binding Modules}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:ModuleItemViewModel}">
+                                        <Border
+                                            x:Name="Row"
+                                            Padding="16,12"
+                                            Style="{StaticResource RowDivider}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel ToolTip="{Binding Description}">
+                                                    <TextBlock Style="{StaticResource RowTitle}" Text="{Binding Name}" />
+                                                    <TextBlock
+                                                        x:Name="DetailText"
+                                                        Style="{StaticResource RowDetail}"
+                                                        Text="{Binding Detail}" />
+                                                </StackPanel>
+                                                <ui:ToggleSwitch
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+                                                <Setter TargetName="Row" Property="BorderThickness" Value="0" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsOff}" Value="True">
+                                                <Setter TargetName="DetailText" Property="Foreground" Value="{StaticResource WarnBrush}" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="ZULETZT" />
+                        <Border Style="{StaticResource GlassPanel}">
+                            <Grid>
+                                <TextBlock
+                                    Margin="16,14"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="Noch keine Ereignisse."
+                                    Visibility="{Binding RecentEvents.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=invert}" />
+                                <ItemsControl ItemsSource="{Binding RecentEvents}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:EventItemViewModel}">
+                                            <Border
+                                                x:Name="Row"
+                                                Padding="16,12"
+                                                Style="{StaticResource RowDivider}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Ellipse Fill="{Binding Severity, Converter={StaticResource SeverityToBrush}}" Style="{StaticResource Dot}" />
+                                                    <StackPanel Grid.Column="1" ToolTip="{Binding Detail}">
+                                                        <TextBlock Style="{StaticResource RowTitle}" Text="{Binding Title}" />
+                                                        <TextBlock Style="{StaticResource MonoDetail}" Text="{Binding Target}" Visibility="{Binding Target, Converter={StaticResource NullToVisibility}}" />
+                                                    </StackPanel>
+                                                    <TextBlock
+                                                        Grid.Column="2"
+                                                        Margin="12,0,0,0"
+                                                        VerticalAlignment="Top"
+                                                        FontSize="12"
+                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                        Text="{Binding Time}" />
+                                                </Grid>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+                                                    <Setter TargetName="Row" Property="BorderThickness" Value="0" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!--  Complementary mode note  -->
+                <StackPanel
+                    Margin="0,24,0,0"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Visibility="{Binding ComplementaryText, Converter={StaticResource NullToVisibility}}">
+                    <ui:SymbolIcon
+                        Margin="0,0,8,0"
+                        Foreground="{StaticResource InfoBrush}"
+                        Symbol="Info24" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="12.5"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="{Binding ComplementaryText}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

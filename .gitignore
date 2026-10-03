@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+TestResults/
+
+# NEVER commit license signing keys
+keys/
+*.private.pem
+*.private.key
+license-private*
