@@ -50,17 +50,19 @@ An interactive HTML mockup lives in [`docs/design/mockup.html`](docs/design/mock
 
 ## Installation
 
-1. Download the latest `Bastion-…-win-x64.zip` from [Releases](https://github.com/lspx-1/AV/releases) or the newest build artifact from [Actions](https://github.com/lspx-1/AV/actions).
-2. Unpack it, open **PowerShell as administrator** in that folder and run:
+1. Download **`Bastion-Setup-<version>.exe`** from [Releases](https://github.com/lspx-1/AV/releases).
+2. Run it and follow the wizard (German or English). It installs Bastion to `C:\Program Files\Bastion`, registers and starts the **Bastion service** (real-time protection with admin rights), adds Bastion to the start menu and, if you want, to autostart and the Explorer context menu.
+3. Updating: just run the newer setup. It stops the running version first.
+4. Uninstall: *Settings → Apps → Bastion Antivirus*. Quarantine and settings in `C:\ProgramData\Bastion` are kept.
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\install.ps1
-   ```
+Windows SmartScreen may warn because the setup is not code-signed: *More info → Run anyway*.
 
-   This copies Bastion to `C:\Program Files\Bastion`, registers and starts the **Bastion service** (real-time protection with admin rights) and adds the tray app to autostart.
-3. To remove it: `.\uninstall.ps1` (add `-RemoveData` to also delete quarantine and settings).
+<details>
+<summary>Without the installer</summary>
 
-**Without installing:** just start `Bastion.exe`. It runs in *app mode*: protection is active while the app (or its tray icon) runs, with the rights of your user account.
+The release also has a ZIP. Unpack it and run `install.ps1` in an elevated PowerShell (`uninstall.ps1` removes it again), or just start `Bastion.exe` for *app mode*: protection runs while the app or its tray icon runs, with your user's rights.
+
+</details>
 
 ### Test it
 
@@ -149,7 +151,7 @@ Without a kernel driver, which needs Microsoft's driver signing, Bastion
 - [ ] English UI
 - [x] License manager app
 - [ ] License server
-- [ ] MSI installer
+- [x] Installer (Inno Setup)
 
 ## Contributing
 
