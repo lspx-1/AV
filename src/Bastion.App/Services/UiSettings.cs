@@ -24,6 +24,9 @@ public sealed class UiSettings
 
     public ThemeChoice Theme { get; set; } = ThemeChoice.System;
     public BackdropChoice Backdrop { get; set; } = BackdropChoice.Acrylic;
+    /// <summary>How strongly the glass is tinted: 0 = very transparent, 100 = nearly solid.</summary>
+    public int GlassTint { get; set; } = 55;
+
     public bool ShowNotifications { get; set; } = true;
     public bool CloseToTray { get; set; } = true;
 

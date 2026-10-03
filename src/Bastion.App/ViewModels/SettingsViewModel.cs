@@ -32,6 +32,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private int _themeIndex;
     [ObservableProperty] private int _backdropIndex;
+    [ObservableProperty] private double _glassTint = 55;
     [ObservableProperty] private int _sensitivityIndex = 1;
     [ObservableProperty] private int _complementaryIndex;
     [ObservableProperty] private bool _autoQuarantineSignatures;
@@ -71,6 +72,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
         ThemeIndex = (int)_ui.Theme;
         BackdropIndex = (int)_ui.Backdrop;
+        GlassTint = _ui.GlassTint;
         ShowNotifications = _ui.ShowNotifications;
         CloseToTray = _ui.CloseToTray;
         SensitivityIndex = (int)_settings.HeuristicSensitivity;
@@ -112,6 +114,11 @@ public sealed partial class SettingsViewModel : ObservableObject
                 return;
             case nameof(BackdropIndex):
                 _ui.Backdrop = (BackdropChoice)BackdropIndex;
+                _ui.Save();
+                App.ApplyTheme(_ui);
+                return;
+            case nameof(GlassTint):
+                _ui.GlassTint = (int)Math.Round(GlassTint);
                 _ui.Save();
                 App.ApplyTheme(_ui);
                 return;

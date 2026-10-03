@@ -36,6 +36,23 @@
                         </Border>
                         <Border Style="{StaticResource SettingRow}">
                             <Grid>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource RowTitle}" Text="Glas-Tönung" />
+                                    <TextBlock Style="{StaticResource RowDetail}" Text="Links durchsichtiger, rechts kräftiger und besser lesbar." />
+                                </StackPanel>
+                                <Slider
+                                    Width="200"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="100"
+                                    Minimum="0"
+                                    TickFrequency="5"
+                                    Value="{Binding GlassTint, Delay=150}" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource SettingRow}">
+                            <Grid>
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource RowTitle}" Text="Benachrichtigungen bei Funden anzeigen" />
                                 <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding ShowNotifications}" />
                             </Grid>

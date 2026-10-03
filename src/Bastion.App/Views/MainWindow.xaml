@@ -22,6 +22,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!--  Tint and accent glows over the Acrylic backdrop, so the glass has colour instead of looking washed out.  -->
+        <Border Grid.RowSpan="2" Background="{DynamicResource BastionTintBrush}" IsHitTestVisible="False" />
+        <Border Grid.RowSpan="2" Background="{DynamicResource BastionGlowABrush}" IsHitTestVisible="False" />
+        <Border Grid.RowSpan="2" Background="{DynamicResource BastionGlowBBrush}" IsHitTestVisible="False" />
+
         <ui:NavigationView
             x:Name="RootNavigation"
             Grid.Row="1"

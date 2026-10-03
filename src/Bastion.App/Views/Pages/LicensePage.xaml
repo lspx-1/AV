@@ -22,8 +22,8 @@
                     CornerRadius="16">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource BastionPanelBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource BastionPanelStrokeBrush}" />
                             <Setter Property="BorderThickness" Value="1" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsPro}" Value="True">

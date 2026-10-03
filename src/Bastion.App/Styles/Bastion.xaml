@@ -24,9 +24,23 @@
     <SolidColorBrush x:Key="InfoBrush" Color="#4AA9C9" />
     <SolidColorBrush x:Key="NeutralBrush" Color="#8A98A4" />
 
+    <!--  Glass layers. Defaults are for the dark theme; GlassTheme replaces them for light mode and the tint strength setting.  -->
+    <SolidColorBrush x:Key="BastionTintBrush" Color="#A60A131A" />
+    <RadialGradientBrush x:Key="BastionGlowABrush" Center="0.12,0.1" GradientOrigin="0.12,0.1" RadiusX="0.7" RadiusY="0.8">
+        <GradientStop Offset="0" Color="#552AA7C9" />
+        <GradientStop Offset="1" Color="#002AA7C9" />
+    </RadialGradientBrush>
+    <RadialGradientBrush x:Key="BastionGlowBBrush" Center="0.95,0.95" GradientOrigin="0.95,0.95" RadiusX="0.65" RadiusY="0.7">
+        <GradientStop Offset="0" Color="#403A5BD9" />
+        <GradientStop Offset="1" Color="#003A5BD9" />
+    </RadialGradientBrush>
+    <SolidColorBrush x:Key="BastionPanelBrush" Color="#1AFFFFFF" />
+    <SolidColorBrush x:Key="BastionPanelStrokeBrush" Color="#24FFFFFF" />
+    <SolidColorBrush x:Key="BastionOrbBrush" Color="#26FFFFFF" />
+
     <Style x:Key="GlassPanel" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BastionPanelBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BastionPanelStrokeBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="10" />
     </Style>
