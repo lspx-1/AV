@@ -21,6 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- WPF projects do not import System.IO implicitly. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Bastion.Core\Bastion.Core.csproj" />
   </ItemGroup>
 

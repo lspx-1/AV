@@ -1,0 +1,394 @@
+<title>Bastion Glass-Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: Desktop-Hintergrund, darauf ein Milchglas-Fenster; schmale Navigation links, ruhiger Inhalt mit einem großen Status in der Mitte (ESET-Prinzip) */
+:root {
+  --glass: rgba(255, 255, 255, .58);
+  --glass-strong: rgba(255, 255, 255, .78);
+  --glass-line: rgba(255, 255, 255, .7);
+  --hair: rgba(20, 40, 55, .09);
+  --fg: #12202b;
+  --muted: #566573;
+  --accent: #0f6f8f;
+  --accent-fg: #ffffff;
+  --ok: #17864a;
+  --ok-glow: rgba(46, 196, 110, .38);
+  --warn: #b06400;
+  --warn-glow: rgba(255, 166, 0, .38);
+  --bad: #c42b1c;
+  --hover: rgba(255, 255, 255, .55);
+  --shadow: 0 30px 80px rgba(16, 40, 60, .25), 0 1px 0 rgba(255,255,255,.6) inset;
+  --wall-a: #9fd3e4; --wall-b: #f6d7c3; --wall-c: #c5d9f2; --wall-base: #e7eef3;
+  --f-ui: "Segoe UI Variable Text", "Segoe UI", Figtree, system-ui, sans-serif;
+  --f-display: "Segoe UI Variable Display", Figtree, "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass: rgba(24, 32, 40, .55); --glass-strong: rgba(30, 40, 49, .78); --glass-line: rgba(255,255,255,.09);
+    --hair: rgba(255,255,255,.08); --fg: #e9f0f4; --muted: #98a8b4; --accent: #67c3dd; --accent-fg: #06141a;
+    --ok: #5fd896; --ok-glow: rgba(60, 220, 130, .28); --warn: #f3b552; --warn-glow: rgba(255, 170, 40, .28); --bad: #ff8b7c;
+    --hover: rgba(255,255,255,.06); --shadow: 0 30px 80px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.06) inset;
+    --wall-a: #0f4a5e; --wall-b: #3a2240; --wall-c: #13284a; --wall-base: #070c12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --glass: rgba(24, 32, 40, .55); --glass-strong: rgba(30, 40, 49, .78); --glass-line: rgba(255,255,255,.09);
+  --hair: rgba(255,255,255,.08); --fg: #e9f0f4; --muted: #98a8b4; --accent: #67c3dd; --accent-fg: #06141a;
+  --ok: #5fd896; --ok-glow: rgba(60, 220, 130, .28); --warn: #f3b552; --warn-glow: rgba(255, 170, 40, .28); --bad: #ff8b7c;
+  --hover: rgba(255,255,255,.06); --shadow: 0 30px 80px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.06) inset;
+  --wall-a: #0f4a5e; --wall-b: #3a2240; --wall-c: #13284a; --wall-base: #070c12;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; color: var(--fg); font-family: var(--f-ui); font-size: 14px; padding: 28px 16px 40px;
+  background: var(--wall-base);
+  background-image:
+    radial-gradient(60% 70% at 15% 20%, var(--wall-a) 0%, transparent 60%),
+    radial-gradient(50% 60% at 85% 75%, var(--wall-b) 0%, transparent 60%),
+    radial-gradient(55% 55% at 70% 10%, var(--wall-c) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+body.wall-2 { --wall-a: #f2b8a0; --wall-b: #9cc9b8; --wall-c: #f5e2b0; }
+body.wall-3 { --wall-a: #b7c0cc; --wall-b: #b7c0cc; --wall-c: #d3d9e0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body.wall-2 { --wall-a: #5a2a1e; --wall-b: #0e3d33; --wall-c: #4a3a12; } :root:not([data-theme="light"]) body.wall-3 { --wall-a: #1b222b; --wall-b: #1b222b; --wall-c: #232c36; } }
+:root[data-theme="dark"] body.wall-2 { --wall-a: #5a2a1e; --wall-b: #0e3d33; --wall-c: #4a3a12; }
+:root[data-theme="dark"] body.wall-3 { --wall-a: #1b222b; --wall-b: #1b222b; --wall-c: #232c36; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Demo-Leiste */
+.demo-bar { max-width: 1080px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--fg); }
+.demo-bar b { font-family: var(--f-display); font-size: 15px; }
+.demo-bar .ctrls { display: flex; flex-wrap: wrap; gap: 10px; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.seg button { border: 0; background: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--glass-strong); color: var(--fg); font-weight: 600; }
+
+/* Fenster */
+.win {
+  max-width: 1080px; margin: 0 auto; min-height: 680px; border-radius: 12px; overflow: hidden;
+  background: var(--glass); border: 1px solid var(--glass-line); box-shadow: var(--shadow);
+  backdrop-filter: blur(40px) saturate(1.5); -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  display: grid; grid-template-rows: auto 1fr;
+}
+.titlebar { display: flex; align-items: center; gap: 10px; height: 42px; padding-left: 16px; font-size: 12px; }
+.titlebar .sp { flex: 1; }
+.titlebar .name { font-weight: 600; }
+.caption { display: flex; height: 100%; color: var(--muted); }
+.caption span { width: 46px; display: grid; place-items: center; }
+
+.body { display: grid; grid-template-columns: 210px minmax(0, 1fr); }
+nav { padding: 8px 10px 18px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 0; border-radius: 8px; background: none; text-align: left; color: var(--muted); }
+.nav-item svg { width: 18px; height: 18px; flex: none; }
+.nav-item:hover { background: var(--hover); color: var(--fg); }
+.nav-item[aria-current="page"] { background: var(--glass-strong); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.nav-item .count { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--bad); }
+.nav-sp { flex: 1; min-height: 24px; }
+
+main { padding: 12px 40px 40px; min-width: 0; }
+
+/* Status – das Herzstück */
+.status { display: grid; justify-items: center; text-align: center; padding: 34px 0 30px; }
+.orb { width: 132px; height: 132px; border-radius: 50%; position: relative; display: grid; place-items: center; margin-bottom: 22px; }
+.orb::before { content: ""; position: absolute; inset: -34px; border-radius: 50%; background: radial-gradient(closest-side, var(--ok-glow), transparent); transition: background .4s; animation: breathe 4s ease-in-out infinite; }
+.orb .core { width: 100%; height: 100%; border-radius: 50%; background: var(--glass-strong); border: 1px solid var(--glass-line); display: grid; place-items: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+.orb svg { width: 56px; height: 56px; color: var(--ok); transition: color .4s; }
+.status.risk .orb::before { background: radial-gradient(closest-side, var(--warn-glow), transparent); }
+.status.risk .orb svg { color: var(--warn); }
+@keyframes breathe { 50% { transform: scale(1.08); opacity: .75; } }
+.status h1 { font-family: var(--f-display); font-size: 34px; font-weight: 600; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.status p { margin: 8px 0 0; color: var(--muted); max-width: 46ch; }
+.status .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+.btn { border-radius: 8px; padding: 9px 18px; border: 1px solid var(--glass-line); background: var(--glass-strong); font-weight: 500; }
+.btn:hover { filter: brightness(1.04); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; font-weight: 600; }
+.btn.danger { color: var(--bad); }
+.scan-line { width: min(420px, 100%); margin-top: 18px; display: grid; gap: 6px; }
+.progress { height: 3px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s linear; }
+.scan-text { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 26px; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+.facts b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Ruhige Listen statt Karten */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; margin-top: 18px; }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 8px; }
+.list-head h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.list-head button { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12.5px; font-weight: 600; }
+.list { list-style: none; margin: 0; padding: 0; background: var(--glass-strong); border: 1px solid var(--glass-line); border-radius: 10px; }
+.list li { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--hair); min-width: 0; }
+.list li:first-child { border-top: 0; }
+.list .txt { flex: 1; min-width: 0; }
+.list .t { font-weight: 500; }
+.list .s { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .s.mono { font-family: var(--f-mono); font-size: 11.5px; }
+.list .right { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); } .dot.info { background: var(--accent); }
+.list li.off .s { color: var(--warn); }
+
+.toggle { width: 40px; height: 20px; flex: none; border-radius: 99px; border: 1px solid var(--muted); background: transparent; position: relative; padding: 0; }
+.toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform .15s; }
+.toggle[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.toggle[aria-checked="true"]::after { transform: translateX(20px); background: var(--accent-fg); }
+
+.note { margin-top: 26px; display: flex; gap: 10px; align-items: center; justify-content: center; font-size: 12.5px; color: var(--muted); text-align: center; }
+.note svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
+
+/* Lizenz */
+.lic { max-width: 640px; margin: 0 auto; padding-top: 20px; }
+.lic-top { display: flex; align-items: center; gap: 18px; padding: 10px 0 26px; }
+.lic-mark { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .06em; flex: none; box-shadow: 0 10px 30px var(--ok-glow); }
+.lic-mark.free { background: var(--glass-strong); color: var(--fg); border: 1px solid var(--glass-line); box-shadow: none; }
+.lic-top h1 { font-family: var(--f-display); font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+.lic-top p { margin: 4px 0 0; color: var(--muted); }
+.seats { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 8px; }
+.seats i { width: 16px; height: 5px; border-radius: 3px; background: var(--hair); }
+.seats i.on { background: var(--accent); }
+.key-box { margin-top: 26px; }
+.key-box label { display: block; font-weight: 600; margin: 0 4px 8px; }
+.key-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.key-row input { flex: 1 1 260px; min-width: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--glass-line); background: var(--glass-strong); color: var(--fg); font-family: var(--f-mono); font-size: 13px; letter-spacing: .05em; text-transform: uppercase; }
+.msg { min-height: 18px; margin: 10px 4px 0; font-size: 12.5px; color: var(--muted); }
+.msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); }
+.lic-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pro-list { margin-top: 28px; }
+.yes { color: var(--ok); font-weight: 700; } .no { color: var(--muted); }
+
+.placeholder { text-align: center; color: var(--muted); padding: 80px 16px; }
+.placeholder h1 { font-family: var(--f-display); color: var(--fg); font-weight: 600; font-size: 26px; margin: 0 0 8px; }
+.placeholder button { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; }
+
+@media (max-width: 860px) {
+  .cols { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  main { padding: 8px 24px 32px; }
+}
+@media (max-width: 680px) {
+  body { padding-block: 16px; }
+  .win { min-height: 0; }
+  .body { grid-template-columns: minmax(0, 1fr); }
+  nav { flex-direction: row; overflow-x: auto; padding: 4px 8px 8px; }
+  .nav-item { flex: none; }
+  .nav-sp { display: none; }
+  main { padding: 4px 16px 28px; }
+  .status h1 { font-size: 27px; }
+  .orb { width: 108px; height: 108px; }
+  .caption span { width: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="demo-bar">
+  <div><b>Bastion</b> · Glass + Minimal (Mockup)</div>
+  <div class="ctrls">
+    <div class="seg" role="group" aria-label="Hintergrundbild">
+      <button type="button" data-wall="" aria-pressed="true">Hintergrund 1</button>
+      <button type="button" data-wall="wall-2" aria-pressed="false">2</button>
+      <button type="button" data-wall="wall-3" aria-pressed="false">3</button>
+    </div>
+    <div class="seg" role="group" aria-label="Darstellung">
+      <button type="button" data-t="system" aria-pressed="true">System</button>
+      <button type="button" data-t="light" aria-pressed="false">Hell</button>
+      <button type="button" data-t="dark" aria-pressed="false">Dunkel</button>
+    </div>
+  </div>
+</div>
+
+<div class="win">
+  <div class="titlebar">
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--accent)" d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>
+    <span class="name">Bastion</span>
+    <span class="sp"></span>
+    <div class="caption" aria-hidden="true"><span>&#x2013;</span><span>&#x25A2;</span><span>&#x2715;</span></div>
+  </div>
+  <div class="body">
+    <nav aria-label="Hauptnavigation">
+      <button class="nav-item" data-page="dash" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z"/></svg>Status</button>
+      <button class="nav-item" data-page="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>Scan</button>
+      <button class="nav-item" data-page="quar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Quarantäne<span class="count">2</span></button>
+      <button class="nav-item" data-page="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Verlauf</button>
+      <span class="nav-sp"></span>
+      <button class="nav-item" data-page="lic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="14" r="4"/><path d="m11 11 8-8m-3 3 2 2m-4 0 2 2"/></svg>Lizenz</button>
+      <button class="nav-item" data-page="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M4.9 19.1 7 17m10-10 2.1-2.1"/></svg>Einstellungen</button>
+    </nav>
+
+    <main>
+      <section data-view="dash">
+        <div class="status" id="status">
+          <div class="orb"><div class="core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" id="statusIcon"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div></div>
+          <h1 id="stateText">Du bist geschützt</h1>
+          <p id="stateSub">Alle Schutzmodule laufen. Zuletzt geprüft heute um 09:14.</p>
+          <div class="actions">
+            <button class="btn primary" id="quickScan">Schnellscan</button>
+            <button class="btn">Vollständiger Scan</button>
+          </div>
+          <div class="scan-line" id="scanLine" hidden>
+            <div class="progress"><i id="bar"></i></div>
+            <div class="scan-text" id="scanText" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="facts">
+          <span>Signaturen <b>03.10.2026</b></span>
+          <span>Heute geprüft <b>3.912 Dateien</b></span>
+          <span>In Quarantäne <b>2</b></span>
+        </div>
+
+        <div class="cols">
+          <div>
+            <div class="list-head"><h2>Schutz</h2><button type="button">Mehr</button></div>
+            <ul class="list" id="modules">
+              <li><div class="txt"><div class="t">Echtzeit-Dateiwächter</div><div class="s" data-on="Downloads, Desktop, Temp, AppData">Downloads, Desktop, Temp, AppData</div></div><button class="toggle" role="switch" aria-checked="true" aria-label="Echtzeit-Dateiwächter"></button></li>
+              <li><div class="txt"><div class="t">Prozess-Überwachung</div><div class="s" data-on="214 Prozesse heute bewertet">214 Prozesse heute bewertet</div></div><button class="toggle" role="switch" aria-checked="true" aria-label="Prozess-Überwachung"></button></li>
+              <li><div class="txt"><div class="t">Autostart-Wächter</div><div class="s" data-on="Run-Keys, Tasks, Dienste">Run-Keys, Tasks, Dienste</div></div><button class="toggle" role="switch" aria-checked="true" aria-label="Autostart-Wächter"></button></li>
+              <li><div class="txt"><div class="t">Ransomware-Köder</div><div class="s" data-on="12 Köder, unverändert">12 Köder, unverändert</div></div><button class="toggle" role="switch" aria-checked="true" aria-label="Ransomware-Köder"></button></li>
+            </ul>
+          </div>
+          <div>
+            <div class="list-head"><h2>Zuletzt</h2><button type="button" data-goto="log">Verlauf</button></div>
+            <ul class="list">
+              <li><span class="dot bad"></span><div class="txt"><div class="t">Trojaner in Quarantäne verschoben</div><div class="s mono">Downloads\Rechnung_0925.pdf.exe</div></div><span class="right">08:52</span></li>
+              <li><span class="dot warn"></span><div class="txt"><div class="t">Neuer Autostart-Eintrag</div><div class="s mono">HKCU\…\Run\UpdaterSvc</div></div><span class="right">08:53</span></li>
+              <li><span class="dot ok"></span><div class="txt"><div class="t">Schnellscan ohne Funde</div><div class="s">48.210 Dateien in 2:41 min</div></div><span class="right">09:14</span></li>
+              <li><span class="dot info"></span><div class="txt"><div class="t">Signaturen aktualisiert</div><div class="s">3.118 neue Einträge</div></div><span class="right">06:00</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Bitdefender erkannt. Bastion ergänzt ihn und scannt Dateien nicht doppelt.</span></div>
+      </section>
+
+      <section data-view="lic" hidden>
+        <div class="lic">
+          <div class="lic-top">
+            <div class="lic-mark" id="licMark">PRO</div>
+            <div><h1 id="licTitle">Bastion Pro</h1><p id="licSub">Aktiv bis 03.10.2027 · 1 von 3 Geräten<span class="seats"><i class="on"></i><i></i><i></i></span></p></div>
+          </div>
+
+          <ul class="list" id="licDetails">
+            <li><div class="txt"><div class="t">Lizenziert für</div></div><span class="right">Lena Hoffmann</span></li>
+            <li><div class="txt"><div class="t">Lizenzschlüssel</div></div><span class="right" style="font-family:var(--f-mono)">BSTN-7Q4M-••••-••••-K2XR</span></li>
+            <li><div class="txt"><div class="t">Dieses Gerät</div></div><span class="right" style="font-family:var(--f-mono)">DESKTOP-LH24</span></li>
+            <li><div class="txt"><div class="t">Letzte Prüfung</div></div><span class="right">heute, 06:00</span></li>
+          </ul>
+          <div class="lic-actions" id="licActions">
+            <button class="btn" id="refreshLic">Status prüfen</button>
+            <button class="btn danger" id="deactivate">Auf diesem Gerät deaktivieren</button>
+          </div>
+
+          <div class="key-box">
+            <label for="keyInput" id="keyLabel">Anderen Schlüssel eingeben</label>
+            <div class="key-row">
+              <input id="keyInput" placeholder="BSTN-XXXX-XXXX-XXXX-XXXX" maxlength="24" autocomplete="off" spellcheck="false">
+              <button class="btn primary" id="activate">Aktivieren</button>
+            </div>
+            <div class="msg" id="keyMsg" aria-live="polite"></div>
+          </div>
+
+          <div class="pro-list">
+            <div class="list-head"><h2>Free und Pro</h2></div>
+            <ul class="list">
+              <li><div class="txt"><div class="t">Echtzeitschutz, Scans, Quarantäne</div></div><span class="right"><span class="yes">Free</span> · <span class="yes">Pro</span></span></li>
+              <li><div class="txt"><div class="t">Geplante Scans</div></div><span class="right"><span class="yes">Pro</span></span></li>
+              <li><div class="txt"><div class="t">Eigene YARA-Regeln</div></div><span class="right"><span class="yes">Pro</span></span></li>
+              <li><div class="txt"><div class="t">Stündliche Signatur-Updates</div><div class="s">Free: wöchentlich</div></div><span class="right"><span class="yes">Pro</span></span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section data-view="other" hidden>
+        <div class="placeholder"><h1 id="otherTitle">Scan</h1>Diese Seite ist in der Demo nicht ausgearbeitet. Schau dir <button data-goto="dash">Status</button> und <button data-goto="lic">Lizenz</button> an.</div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(() => {
+  const names = { scan: "Scan", quar: "Quarantäne", log: "Verlauf", set: "Einstellungen" };
+  const views = document.querySelectorAll("[data-view]");
+  function go(page) {
+    document.querySelectorAll(".nav-item").forEach(n => { if (n.dataset.page === page) n.setAttribute("aria-current", "page"); else n.removeAttribute("aria-current"); });
+    const target = page === "dash" || page === "lic" ? page : "other";
+    views.forEach(v => v.hidden = v.dataset.view !== target);
+    if (target === "other") document.getElementById("otherTitle").textContent = names[page];
+  }
+  document.querySelectorAll(".nav-item").forEach(n => n.addEventListener("click", () => go(n.dataset.page)));
+  document.querySelectorAll("[data-goto]").forEach(a => a.addEventListener("click", () => go(a.dataset.goto)));
+
+  function seg(sel, fn) {
+    const btns = document.querySelectorAll(sel);
+    btns.forEach(b => b.addEventListener("click", () => { fn(b); btns.forEach(x => x.setAttribute("aria-pressed", String(x === b))); }));
+  }
+  seg("[data-t]", b => b.dataset.t === "system" ? document.documentElement.removeAttribute("data-theme") : document.documentElement.setAttribute("data-theme", b.dataset.t));
+  seg("[data-wall]", b => { document.body.classList.remove("wall-2", "wall-3"); if (b.dataset.wall) document.body.classList.add(b.dataset.wall); });
+
+  // Status abhängig von den Schaltern
+  const status = document.getElementById("status"), icon = document.getElementById("statusIcon");
+  const okPath = '<path d="m5 12.5 4.5 4.5L19 7.5"/>', warnPath = '<path d="M12 7v6M12 17h.01"/>';
+  function update() {
+    const off = [...document.querySelectorAll("#modules .toggle")].filter(t => t.getAttribute("aria-checked") === "false").length;
+    status.classList.toggle("risk", off > 0);
+    icon.innerHTML = off ? warnPath : okPath;
+    document.getElementById("stateText").textContent = off ? "Schutz eingeschränkt" : "Du bist geschützt";
+    document.getElementById("stateSub").textContent = off ? `${off} Schutzmodul${off > 1 ? "e sind" : " ist"} ausgeschaltet. Schalte ${off > 1 ? "sie" : "es"} wieder ein, um voll geschützt zu sein.` : "Alle Schutzmodule laufen. Zuletzt geprüft heute um 09:14.";
+  }
+  document.querySelectorAll("#modules .toggle").forEach(t => t.addEventListener("click", () => {
+    const on = t.getAttribute("aria-checked") === "true";
+    t.setAttribute("aria-checked", String(!on));
+    const li = t.closest("li"), s = li.querySelector(".s");
+    li.classList.toggle("off", on);
+    s.textContent = on ? "Ausgeschaltet" : s.dataset.on;
+    update();
+  }));
+
+  // Schnellscan (gespielt)
+  const btn = document.getElementById("quickScan"), line = document.getElementById("scanLine"), bar = document.getElementById("bar"), txt = document.getElementById("scanText");
+  const paths = ["C:\\Windows\\System32", "C:\\Users\\Lena\\Downloads", "C:\\Program Files", "C:\\Users\\Lena\\AppData", "C:\\ProgramData"];
+  let timer = null;
+  btn.addEventListener("click", () => {
+    if (timer) { clearInterval(timer); timer = null; txt.textContent = "Scan abgebrochen"; btn.textContent = "Schnellscan"; return; }
+    let p = 0, files = 0; line.hidden = false; btn.textContent = "Abbrechen";
+    timer = setInterval(() => {
+      p += 2; files += 950 + Math.floor(Math.random() * 90);
+      bar.style.width = p + "%";
+      txt.textContent = `${p} % · ${files.toLocaleString("de-DE")} Dateien · ${paths[Math.min(4, Math.floor(p / 20))]}`;
+      if (p >= 100) { clearInterval(timer); timer = null; txt.textContent = `Fertig. ${files.toLocaleString("de-DE")} Dateien geprüft, nichts gefunden.`; btn.textContent = "Schnellscan"; }
+    }, 70);
+  });
+
+  // Lizenz (gespielt)
+  const mark = document.getElementById("licMark"), title = document.getElementById("licTitle"), sub = document.getElementById("licSub");
+  const details = document.getElementById("licDetails"), deact = document.getElementById("deactivate"), msg = document.getElementById("keyMsg");
+  const proSub = sub.innerHTML, proDetails = details.innerHTML;
+  function setFree() {
+    mark.textContent = "FREE"; mark.classList.add("free"); title.textContent = "Bastion Free";
+    sub.textContent = "Voller Schutz. Pro-Funktionen sind nicht freigeschaltet.";
+    details.innerHTML = '<li><div class="txt"><div class="t">Dieses Gerät</div></div><span class="right" style="font-family:var(--f-mono)">DESKTOP-LH24</span></li>';
+    deact.hidden = true; document.getElementById("keyLabel").textContent = "Lizenzschlüssel eingeben";
+  }
+  function setPro() {
+    mark.textContent = "PRO"; mark.classList.remove("free"); title.textContent = "Bastion Pro";
+    sub.innerHTML = proSub; details.innerHTML = proDetails; deact.hidden = false;
+    document.getElementById("keyLabel").textContent = "Anderen Schlüssel eingeben";
+  }
+  deact.addEventListener("click", () => { setFree(); msg.className = "msg"; msg.textContent = "Lizenz auf diesem Gerät deaktiviert. Der Gerätplatz ist wieder frei."; });
+  document.getElementById("refreshLic").addEventListener("click", () => { msg.className = "msg ok"; msg.textContent = "Lizenzstatus ist aktuell."; });
+  const input = document.getElementById("keyInput");
+  input.addEventListener("input", () => { const raw = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20); input.value = raw.match(/.{1,4}/g)?.join("-") ?? ""; });
+  document.getElementById("activate").addEventListener("click", () => {
+    if (/^BSTN(-[A-Z0-9]{4}){4}$/.test(input.value)) { setPro(); msg.className = "msg ok"; msg.textContent = "Lizenz aktiviert. Pro-Funktionen sind freigeschaltet."; input.value = ""; }
+    else { msg.className = "msg bad"; msg.textContent = "Falsches Format. Der Schlüssel beginnt mit BSTN und hat 5 Blöcke mit je 4 Zeichen."; }
+  });
+})();
+</script>
