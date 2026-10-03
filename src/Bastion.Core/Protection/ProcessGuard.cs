@@ -33,8 +33,11 @@ public sealed class ProcessGuard(IProtectionContext context) : ProtectionModuleB
                 _watcher = new ManagementEventWatcher(new WqlEventQuery("SELECT ProcessID FROM Win32_ProcessStartTrace"));
                 _watcher.EventArrived += (_, e) =>
                 {
-                    var pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
-                    ThreadPool.QueueUserWorkItem(_ => Inspect(pid));
+                    Safe("Prozessereignis", () =>
+                    {
+                        var pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
+                        ThreadPool.QueueUserWorkItem(_ => Safe("Prozessprüfung", () => Inspect(pid)));
+                    });
                 };
                 _watcher.Start();
                 return;
@@ -48,7 +51,7 @@ public sealed class ProcessGuard(IProtectionContext context) : ProtectionModuleB
             }
         }
         _knownPids = Process.GetProcesses().Select(p => { using (p) return p.Id; }).ToHashSet();
-        _pollTimer = new Timer(_ => Poll(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+        _pollTimer = new Timer(_ => Safe("Prozessliste", Poll), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
     }
 
     protected override void OnStop()
@@ -74,6 +77,8 @@ public sealed class ProcessGuard(IProtectionContext context) : ProtectionModuleB
         if (path is null || !File.Exists(path))
             return;
         Interlocked.Increment(ref _checkedToday);
+        if (path.StartsWith(Context.Paths.Root, StringComparison.OrdinalIgnoreCase))
+            return;
 
         var name = Path.GetFileNameWithoutExtension(path);
         if (RemoteAccessAnalyzer.IsMasquerading(name, path))

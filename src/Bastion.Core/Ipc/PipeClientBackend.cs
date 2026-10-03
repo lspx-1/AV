@@ -12,6 +12,10 @@ using Bastion.Core.Updates;
 namespace Bastion.Core.Ipc;
 
 /// <summary>Talks to the Bastion service over the named pipe.</summary>
+/// <summary>The Bastion service is not reachable right now. The app reconnects on its own.</summary>
+public sealed class ServiceUnavailableException()
+    : Exception("Die Verbindung zum Bastion-Dienst ist kurz unterbrochen. Bastion verbindet sich gerade neu – versuch es in ein paar Sekunden noch einmal.");
+
 public sealed class PipeClientBackend : IBastionBackend, IDisposable
 {
     private readonly NamedPipeClientStream _pipe;
@@ -49,7 +53,7 @@ public sealed class PipeClientBackend : IBastionBackend, IDisposable
             await client.CallAsync<StatusSnapshot>(nameof(GetStatusAsync)).WaitAsync(timeout);
             return client;
         }
-        catch (Exception e) when (e is IOException or OperationCanceledException or TimeoutException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception e) when (e is IOException or OperationCanceledException or TimeoutException or UnauthorizedAccessException or InvalidOperationException or ServiceUnavailableException)
         {
             pipe.Dispose();
             return null;
@@ -126,11 +130,26 @@ public sealed class PipeClientBackend : IBastionBackend, IDisposable
             await _pipe.WriteAsync(bytes);
             await _pipe.FlushAsync();
         }
+        catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidOperationException)
+        {
+            _pending.TryRemove(id, out _);
+            // The service went away (restart or crash). Close our end so the read loop reports the disconnect.
+            _pipe.Dispose();
+            throw new ServiceUnavailableException();
+        }
         finally
         {
             _write.Release();
         }
-        var result = await tcs.Task;
+        JsonElement? result;
+        try
+        {
+            result = await tcs.Task;
+        }
+        catch (IOException)
+        {
+            throw new ServiceUnavailableException();
+        }
         return result is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } r ? r.Deserialize<T>(JsonStore.Options)! : default!;
     }
 

@@ -46,7 +46,7 @@ public sealed class AutostartGuard(IProtectionContext context) : ProtectionModul
             _baseline = Snapshot().GroupBy(e => e.Key).ToDictionary(g => g.Key, g => g.First());
             Save();
         }
-        _timer = new Timer(_ => Check(), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10));
+        _timer = new Timer(_ => Safe("Autostart-Prüfung", Check), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10));
     }
 
     protected override void OnStop()
@@ -109,14 +109,8 @@ public sealed class AutostartGuard(IProtectionContext context) : ProtectionModul
         {
             foreach (var path in RunKeys)
             {
-                using var key = root.OpenSubKey(path);
-                if (key is null)
-                    continue;
-                foreach (var name in key.GetValueNames())
-                {
-                    if (key.GetValue(name) is string cmd)
-                        yield return new AutostartEntry($@"{label}\{path}", name, cmd);
-                }
+                foreach (var entry in ReadRunKey(root, label, path))
+                    yield return entry;
             }
             if (root is var r && label.StartsWith("HKU", StringComparison.Ordinal))
                 r.Dispose();
@@ -142,6 +136,27 @@ public sealed class AutostartGuard(IProtectionContext context) : ProtectionModul
                 continue;
             yield return new AutostartEntry("Geplante Aufgaben", Path.GetRelativePath(tasks, file), TaskCommand(file));
         }
+    }
+
+    private static List<AutostartEntry> ReadRunKey(RegistryKey root, string label, string path)
+    {
+        var list = new List<AutostartEntry>();
+        try
+        {
+            using var key = root.OpenSubKey(path);
+            if (key is null)
+                return list;
+            foreach (var name in key.GetValueNames())
+            {
+                if (key.GetValue(name) is string cmd)
+                    list.Add(new AutostartEntry($@"{label}\{path}", name, cmd));
+            }
+        }
+        catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+        {
+            // A user hive we may not read; skip it.
+        }
+        return list;
     }
 
     private static IEnumerable<(RegistryKey Root, string Label)> Hives()

@@ -29,7 +29,24 @@ public sealed class EventJournal
                 _events.RemoveLast();
             Append(e);
         }
-        Added?.Invoke(e);
+        Notify(Added, e);
+    }
+
+    // A failing listener (e.g. a broken pipe connection) must not break the module that raised the event.
+    private static void Notify(Action<SecurityEvent>? handler, SecurityEvent e)
+    {
+        if (handler is null)
+            return;
+        foreach (var h in handler.GetInvocationList().Cast<Action<SecurityEvent>>())
+        {
+            try
+            {
+                h(e);
+            }
+            catch (Exception)
+            {
+            }
+        }
     }
 
     public SecurityEvent? Find(Guid id)
@@ -46,7 +63,7 @@ public sealed class EventJournal
             e.Actions = [];
             Append(e);
         }
-        Updated?.Invoke(e);
+        Notify(Updated, e);
     }
 
     public IReadOnlyList<SecurityEvent> Recent(int max)
@@ -68,7 +85,7 @@ public sealed class EventJournal
             var file = Path.Combine(_dir, $"events-{DateTime.Now:yyyy-MM-dd}.jsonl");
             File.AppendAllText(file, JsonSerializer.Serialize(e, JsonStore.Options).Replace("\r", "").Replace("\n", "") + "\n");
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             // Logging must never take protection down.
         }

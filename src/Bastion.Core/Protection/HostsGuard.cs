@@ -42,9 +42,9 @@ public sealed class HostsGuard(IProtectionContext context) : ProtectionModuleBas
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
         };
-        _watcher.Changed += (_, _) => OnChanged(hosts);
-        _watcher.Created += (_, _) => OnChanged(hosts);
-        _watcher.Renamed += (_, _) => OnChanged(hosts);
+        _watcher.Changed += (_, _) => Safe("Hosts-Prüfung", () => OnChanged(hosts));
+        _watcher.Created += (_, _) => Safe("Hosts-Prüfung", () => OnChanged(hosts));
+        _watcher.Renamed += (_, _) => Safe("Hosts-Prüfung", () => OnChanged(hosts));
         _watcher.EnableRaisingEvents = true;
     }
 
@@ -62,7 +62,7 @@ public sealed class HostsGuard(IProtectionContext context) : ProtectionModuleBas
         {
             content = File.ReadAllText(hosts);
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return;
         }

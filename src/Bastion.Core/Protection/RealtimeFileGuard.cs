@@ -55,9 +55,9 @@ public sealed class RealtimeFileGuard(IProtectionContext context) : ProtectionMo
                         return;
                     Enqueue(path);
                 }
-                w.Created += (_, e) => OnEvent(e.FullPath);
-                w.Changed += (_, e) => OnEvent(e.FullPath);
-                w.Renamed += (_, e) => OnEvent(e.FullPath);
+                w.Created += (_, e) => Safe("Dateiereignis", () => OnEvent(e.FullPath));
+                w.Changed += (_, e) => Safe("Dateiereignis", () => OnEvent(e.FullPath));
+                w.Renamed += (_, e) => Safe("Dateiereignis", () => OnEvent(e.FullPath));
                 w.Error += (_, e) => Context.Log($"Dateiwächter-Puffer übergelaufen in {dir}: {e.GetException().Message}");
                 w.EnableRaisingEvents = true;
                 _watchers.Add(w);
@@ -130,11 +130,15 @@ public sealed class RealtimeFileGuard(IProtectionContext context) : ProtectionMo
                 if (!await WaitUntilReadableAsync(path, ct).ConfigureAwait(false))
                     continue;
 
-                var result = Context.Engine.ScanFile(path);
-                RollDay();
-                Interlocked.Increment(ref _scannedToday);
-                if (result.IsMalicious)
-                    Context.HandleDetection(result, EventCategory.Realtime);
+                // One bad file must not stop real-time protection for everything after it.
+                Safe($"Scan von {path}", () =>
+                {
+                    var result = Context.Engine.ScanFile(path);
+                    RollDay();
+                    Interlocked.Increment(ref _scannedToday);
+                    if (result.IsMalicious)
+                        Context.HandleDetection(result, EventCategory.Realtime);
+                });
             }
         }
     }
@@ -152,7 +156,7 @@ public sealed class RealtimeFileGuard(IProtectionContext context) : ProtectionMo
             {
                 await Task.Delay(500, ct).ConfigureAwait(false);
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception e) when (e is UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
                 return false;
             }

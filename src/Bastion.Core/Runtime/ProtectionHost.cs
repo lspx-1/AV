@@ -123,10 +123,22 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
                      (_otherAv.Count > 0 ? $" Ergänzungsmodus neben {string.Join(", ", _otherAv)}." : ""),
         });
 
-        _timers.Add(new Timer(_ => _otherAv = AntivirusProducts.ActiveThirdParty(), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)));
-        _timers.Add(new Timer(_ => _ = AutoUpdateAsync(), null, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(30)));
-        _timers.Add(new Timer(_ => _ = License.RefreshAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromHours(6)));
-        _timers.Add(new Timer(_ => ScheduledScanTick(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10)));
+        _timers.Add(new Timer(_ => Safe("Virenschutz-Erkennung", () => _otherAv = AntivirusProducts.ActiveThirdParty()), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)));
+        _timers.Add(new Timer(_ => Safe("Signatur-Update", () => _ = AutoUpdateAsync()), null, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(30)));
+        _timers.Add(new Timer(_ => Safe("Lizenzprüfung", () => _ = License.RefreshAsync()), null, TimeSpan.FromMinutes(1), TimeSpan.FromHours(6)));
+        _timers.Add(new Timer(_ => Safe("Geplanter Scan", ScheduledScanTick), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10)));
+    }
+
+    private void Safe(string what, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception e)
+        {
+            Log($"{what} fehlgeschlagen: {e.GetType().Name}: {e.Message}");
+        }
     }
 
     public void Dispose()
@@ -393,7 +405,16 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
             Parallel.ForEach(files, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2) }, path =>
             {
                 current = path;
-                var result = Engine.ScanFile(path);
+                FileScanResult result;
+                try
+                {
+                    result = Engine.ScanFile(path);
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    Log($"Scan von {path} fehlgeschlagen: {e.Message}");
+                    return;
+                }
                 Interlocked.Increment(ref scanned);
                 if (result.IsMalicious)
                 {

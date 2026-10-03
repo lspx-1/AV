@@ -57,9 +57,9 @@ public sealed class RansomwareGuard(IProtectionContext context) : ProtectionModu
                     IncludeSubdirectories = false,
                     NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
                 };
-                w.Changed += (_, e) => OnTouched(e.FullPath);
-                w.Deleted += (_, e) => OnTouched(e.FullPath);
-                w.Renamed += (_, e) => OnTouched(e.OldFullPath);
+                w.Changed += (_, e) => Safe("Köder-Prüfung", () => OnTouched(e.FullPath));
+                w.Deleted += (_, e) => Safe("Köder-Prüfung", () => OnTouched(e.FullPath));
+                w.Renamed += (_, e) => Safe("Köder-Prüfung", () => OnTouched(e.OldFullPath));
                 w.EnableRaisingEvents = true;
                 _watchers.Add(w);
             }
