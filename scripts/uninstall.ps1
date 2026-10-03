@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Removes Bastion. Quarantine, logs and settings in %ProgramData%\Bastion are kept unless -RemoveData is given.
 #>
