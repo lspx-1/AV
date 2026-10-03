@@ -111,10 +111,12 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <ui:TextBox
+                    x:Name="KeyBox"
                     FontFamily="Cascadia Mono, Consolas"
                     MaxLength="24"
                     PlaceholderText="BSTN-XXXX-XXXX-XXXX-XXXX"
-                    Text="{Binding KeyInput, UpdateSourceTrigger=PropertyChanged}" />
+                    Text="{Binding KeyInput, UpdateSourceTrigger=PropertyChanged}"
+                    TextChanged="KeyBox_TextChanged" />
                 <ui:Button
                     Grid.Column="1"
                     Margin="8,0,0,0"

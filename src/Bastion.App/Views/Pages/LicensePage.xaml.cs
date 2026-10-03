@@ -11,4 +11,7 @@ public partial class LicensePage : Page
         InitializeComponent();
         Loaded += async (_, _) => await viewModel.RefreshAsync();
     }
+
+    // The view model reformats the key (adds dashes); keep the caret at the end while typing.
+    private void KeyBox_TextChanged(object sender, TextChangedEventArgs e) => KeyBox.CaretIndex = KeyBox.Text.Length;
 }

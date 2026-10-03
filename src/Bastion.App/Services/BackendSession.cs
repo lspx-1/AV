@@ -34,7 +34,10 @@ public sealed partial class BackendSession : ObservableObject, IDisposable
 
     public async Task ConnectAsync()
     {
-        _pipe = await PipeClientBackend.TryConnectAsync(TimeSpan.FromSeconds(2));
+        // Skip the pipe timeout when the service is not installed at all.
+        _pipe = WindowsIntegration.ServiceState() == "Nicht installiert"
+            ? null
+            : await PipeClientBackend.TryConnectAsync(TimeSpan.FromSeconds(2));
         if (_pipe is not null)
         {
             _pipe.Disconnected += OnPipeDisconnected;
@@ -44,7 +47,8 @@ public sealed partial class BackendSession : ObservableObject, IDisposable
         }
         else
         {
-            _localHost ??= CreateLocalHost();
+            // Starting the modules takes a moment; keep the window responsive.
+            _localHost ??= await Task.Run(CreateLocalHost);
             Attach(_localHost);
             IsServiceMode = false;
             ModeText = "App-Modus: Schutz nur, solange Bastion läuft";
