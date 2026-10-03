@@ -43,6 +43,31 @@ public class NetworkTests
     }
 
     [Fact]
+    public void JitteredIntervalsWithOutlierAreBeaconing()
+    {
+        var detector = new BeaconDetector();
+        var t = DateTimeOffset.Now;
+        // ~60 s with +-25 % jitter and one missed poll
+        double[] gaps = [52, 71, 58, 66, 49, 130, 63, 55];
+        var at = 0.0;
+        detector.RecordConnection("rat.exe", "203.0.113.9", t);
+        foreach (var g in gaps)
+            detector.RecordConnection("rat.exe", "203.0.113.9", t.AddSeconds(at += g));
+        var result = detector.Evaluate("rat.exe", "203.0.113.9");
+        Assert.NotNull(result);
+        Assert.InRange(result!.Interval.TotalSeconds, 50, 70);
+    }
+
+    [Fact]
+    public void RatCapabilitiesNeedSeveralTraits()
+    {
+        var one = new HashSet<string> { "GetAsyncKeyState" };
+        var several = new HashSet<string> { "GetAsyncKeyState", "BitBlt", "GetDC", "SendInput" };
+        Assert.Single(Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(one));
+        Assert.Equal(3, Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(several).Count);
+    }
+
+    [Fact]
     public void BlocklistedRemoteIsDangerous()
     {
         var blocklist = new IpBlocklist();
