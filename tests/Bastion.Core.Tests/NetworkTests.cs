@@ -67,6 +67,77 @@ public class NetworkTests
         Assert.Equal(3, Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(several).Count);
     }
 
+    private static TcpConnection Conn(string remote, int pid = 77, int port = 51000) =>
+        new(new IPEndPoint(IPAddress.Parse("192.168.1.2"), port), new IPEndPoint(IPAddress.Parse(remote), 443), TcpState.Established, pid);
+
+    [Fact]
+    public void RenamedRemoteSupportToolIsFlagged()
+    {
+        var analyzer = new RemoteAccessAnalyzer(new IpBlocklist(), new BeaconDetector(), _ => SignatureState.Signed, null,
+            _ => "AnyDesk|AnyDesk Software|AnyDesk|AnyDesk.exe|philandro Software GmbH");
+        var (view, findings) = analyzer.Analyze(Conn("198.51.100.20"), "svchosts", @"C:\Users\a\AppData\Local\Temp\svchosts.exe", DateTimeOffset.Now);
+        Assert.Equal(ConnectionRisk.Dangerous, view.Risk);
+        Assert.Contains(findings, f => f.Key.StartsWith("rat-tool-renamed:", StringComparison.Ordinal) && f.Severity == Severity.High);
+    }
+
+    [Fact]
+    public void InstalledSignedRemoteToolOnlyInforms()
+    {
+        var analyzer = new RemoteAccessAnalyzer(new IpBlocklist(), new BeaconDetector(), _ => SignatureState.Signed);
+        var (view, findings) = analyzer.Analyze(Conn("198.51.100.20"), "AnyDesk", @"C:\Program Files (x86)\AnyDesk\AnyDesk.exe", DateTimeOffset.Now);
+        Assert.Equal(ConnectionRisk.Info, view.Risk);
+        Assert.All(findings, f => Assert.Equal(Severity.Info, f.Severity));
+    }
+
+    [Fact]
+    public void PortableRemoteToolInUserFolderIsSuspicious()
+    {
+        var analyzer = new RemoteAccessAnalyzer(new IpBlocklist(), new BeaconDetector(), _ => SignatureState.Unsigned);
+        var (_, findings) = analyzer.Analyze(Conn("198.51.100.20"), "AnyDesk", @"C:\Users\a\Downloads\AnyDesk.exe", DateTimeOffset.Now);
+        Assert.Contains(findings, f => f.Key.StartsWith("rat-tool-portable:", StringComparison.Ordinal) && f.Severity == Severity.Medium);
+    }
+
+    [Theory]
+    [InlineData("evil.duckdns.org", true)]
+    [InlineData("duckdns.org", true)]
+    [InlineData("host.ddns.net.", true)]
+    [InlineData("example.com", false)]
+    [InlineData("notduckdns.org", false)]
+    public void DynamicDnsSuffixes(string host, bool expected) => Assert.Equal(expected, DynamicDnsWatcher.IsDynamicDns(host));
+
+    [Fact]
+    public void ConnectionToDynamicDnsHostIsReported()
+    {
+        var watcher = new DynamicDnsWatcher(() => ["c2.duckdns.org", "example.com"], _ => [IPAddress.Parse("198.51.100.30")]);
+        watcher.Refresh();
+        Assert.Equal("c2.duckdns.org", watcher.HostFor(IPAddress.Parse("198.51.100.30")));
+
+        var analyzer = new RemoteAccessAnalyzer(new IpBlocklist(), new BeaconDetector(), _ => SignatureState.Unsigned, watcher);
+        var (_, findings) = analyzer.Analyze(Conn("198.51.100.30"), "client", @"C:\Users\a\AppData\Roaming\client.exe", DateTimeOffset.Now);
+        Assert.Contains(findings, f => f.Key.StartsWith("ddns:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AutostartPlusNetworkIsCorrelatedOnce()
+    {
+        var c = new Bastion.Core.Protection.PersistenceCorrelator();
+        var now = DateTimeOffset.Now;
+        Assert.Null(c.NoteNetwork(@"C:\Users\a\x.exe", "198.51.100.1:443", 5, now));
+        var link = c.NoteAutostart(@"c:\users\a\X.EXE", @"HKCU\Run\x", "x.exe", now.AddSeconds(5));
+        Assert.NotNull(link);
+        Assert.Equal(5, link!.ProcessId);
+        Assert.Null(c.NoteNetwork(@"C:\Users\a\x.exe", "198.51.100.1:443", 5, now.AddSeconds(10)));
+    }
+
+    [Fact]
+    public void CorrelationExpiresAfterWindow()
+    {
+        var c = new Bastion.Core.Protection.PersistenceCorrelator(TimeSpan.FromHours(1));
+        var now = DateTimeOffset.Now;
+        c.NoteAutostart(@"C:\a.exe", @"HKCU\Run\a", "a.exe", now);
+        Assert.Null(c.NoteNetwork(@"C:\a.exe", "198.51.100.1:443", 1, now.AddHours(2)));
+    }
+
     [Fact]
     public void BlocklistedRemoteIsDangerous()
     {

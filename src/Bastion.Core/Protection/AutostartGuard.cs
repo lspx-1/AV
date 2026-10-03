@@ -17,7 +17,7 @@ public sealed record AutostartEntry(string Location, string Name, string Command
 /// Remembers all autostart entries (Run keys, startup folders, scheduled tasks) and reports new ones.
 /// Malware almost always creates one to survive a restart.
 /// </summary>
-public sealed class AutostartGuard(IProtectionContext context) : ProtectionModuleBase(context)
+public sealed class AutostartGuard(IProtectionContext context, PersistenceCorrelator? correlator = null) : ProtectionModuleBase(context)
 {
     private static readonly string[] RunKeys =
     [
@@ -86,6 +86,12 @@ public sealed class AutostartGuard(IProtectionContext context) : ProtectionModul
         }
 
         var trusted = program is not null && File.Exists(program) && Authenticode.Check(program) == SignatureState.Signed;
+        if (!trusted && program is not null && File.Exists(program))
+        {
+            var link = correlator?.NoteAutostart(program, entry.Location + "\\" + entry.Name, entry.Command, DateTimeOffset.Now);
+            if (link is not null)
+                Context.Raise(PersistenceCorrelator.ToEvent(link));
+        }
         Context.Raise(new SecurityEvent
         {
             Category = EventCategory.Autostart,
