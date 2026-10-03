@@ -32,6 +32,12 @@ public partial class App : Application
         }
 
         DispatcherUnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            LogError(args.Exception);
+            args.SetObserved();
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) => LogError((Exception)args.ExceptionObject);
         _services = ConfigureServices();
 
         var window = _services.GetRequiredService<MainWindow>();
@@ -102,30 +108,61 @@ public partial class App : Application
         var window = Services.GetRequiredService<MainWindow>();
         if (ui.Theme == ThemeChoice.System)
         {
-            ApplicationThemeManager.ApplySystemTheme(true);
-            SystemThemeWatcher.Watch(window, backdrop, true);
+            ApplicationThemeManager.ApplySystemTheme(false);
+            SystemThemeWatcher.Watch(window, backdrop, false);
         }
         else
         {
             SystemThemeWatcher.UnWatch(window);
-            ApplicationThemeManager.Apply(ui.Theme == ThemeChoice.Light ? ApplicationTheme.Light : ApplicationTheme.Dark, backdrop, true);
+            ApplicationThemeManager.Apply(ui.Theme == ThemeChoice.Light ? ApplicationTheme.Light : ApplicationTheme.Dark, backdrop, false);
         }
         window.WindowBackdropType = backdrop;
+        GlassTheme.Apply(ui, backdrop);
+
+        if (!_themeHooked)
+        {
+            // Windows switched between light and dark: recolour the glass layers.
+            _themeHooked = true;
+            ApplicationThemeManager.Changed += (_, _) => Current.Dispatcher.InvokeAsync(() => GlassTheme.Apply(ui, window.WindowBackdropType));
+        }
     }
+
+    private static bool _themeHooked;
+
+    private DateTime _lastErrorShown;
+    private int _errorsLogged;
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
+        LogError(e.Exception);
+        // An error that repeats on every layout pass must not flood the screen with messages.
+        if (DateTime.UtcNow - _lastErrorShown < TimeSpan.FromSeconds(10))
+            return;
+        _lastErrorShown = DateTime.UtcNow;
         try
         {
             Services.GetRequiredService<ISnackbarService>().Show("Unerwarteter Fehler", e.Exception.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(6));
-            var log = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bastion", "app-errors.log");
-            Directory.CreateDirectory(Path.GetDirectoryName(log)!);
-            File.AppendAllText(log, $"{DateTime.Now:O} {e.Exception}\n\n");
         }
         catch (Exception)
         {
             // Never crash while reporting a crash.
+        }
+    }
+
+    /// <summary>Writes to %LocalAppData%\Bastion\app-errors.log (at most 200 entries per run).</summary>
+    public void LogError(Exception exception)
+    {
+        if (Interlocked.Increment(ref _errorsLogged) > 200)
+            return;
+        try
+        {
+            var log = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bastion", "app-errors.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+            File.AppendAllText(log, $"{DateTime.Now:O} {exception}\n\n");
+        }
+        catch (Exception)
+        {
         }
     }
 

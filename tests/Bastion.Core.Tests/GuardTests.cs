@@ -19,6 +19,15 @@ public class GuardTests
         Assert.Contains(suspicious, l => l.Contains("paypal"));
     }
 
+    [Fact]
+    public void CoreAndOwnProcessesAreNeverKilled()
+    {
+        Assert.True(Platform.ProcessInfo.IsProtected(4, out _));
+        Assert.True(Platform.ProcessInfo.IsProtected(Environment.ProcessId, out _));
+        Assert.False(Platform.ProcessInfo.TryKill(Environment.ProcessId, out var error));
+        Assert.NotNull(error);
+    }
+
     [Theory]
     [InlineData("\"C:\\Program Files\\App\\app.exe\" --minimized", "C:\\Program Files\\App\\app.exe")]
     [InlineData("C:\\Tools\\tool.exe /background", "C:\\Tools\\tool.exe")]

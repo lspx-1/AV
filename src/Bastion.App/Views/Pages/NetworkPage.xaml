@@ -6,12 +6,13 @@
     xmlns:vm="clr-namespace:Bastion.App.ViewModels"
     Title="Netzwerk">
 
-    <Grid MaxWidth="1040" Margin="40,8,40,24">
+    <Grid MaxWidth="1040" Margin="40,8,40,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <StackPanel>
@@ -56,7 +57,7 @@
             <ui:TextBox
                 Icon="{ui:SymbolIcon Search24}"
                 PlaceholderText="Programm oder Adresse suchen"
-                Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+                Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
             <CheckBox
                 Grid.Column="1"
                 Margin="16,0,0,0"
@@ -64,60 +65,80 @@
                 IsChecked="{Binding OnlyNotable}" />
         </Grid>
 
-        <!--  Connections  -->
-        <Border Grid.Row="3" Style="{StaticResource GlassPanel}">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Connections}" VirtualizingPanel.IsVirtualizing="True">
-                    <ItemsControl.ItemTemplate>
+        <!--  Connections: virtualized, only visible rows are drawn  -->
+        <Border Grid.Row="3" Padding="4" Style="{StaticResource GlassPanel}">
+            <Grid>
+                <ListView
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ItemsSource="{Binding Connections}"
+                    ScrollViewer.CanContentScroll="True"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    SelectedItem="{Binding Selected}"
+                    SelectionMode="Single"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.ScrollUnit="Pixel"
+                    VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ListView.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:ConnectionItemViewModel}">
-                            <Border x:Name="Row" Padding="16,10" Style="{StaticResource RowDivider}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Ellipse Fill="{Binding View.Risk, Converter={StaticResource RiskToBrush}}" Style="{StaticResource Dot}" />
-                                    <StackPanel Grid.Column="1" ToolTip="{Binding View.ProcessPath}">
-                                        <TextBlock Style="{StaticResource RowTitle}" Text="{Binding Process}" />
-                                        <TextBlock Style="{StaticResource MonoDetail}" Text="{Binding View.ProcessPath}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2" Margin="12,0">
-                                        <TextBlock Style="{StaticResource MonoDetail}" Margin="0" FontSize="12.5" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Endpoint}" />
-                                        <TextBlock Style="{StaticResource RowDetail}" Text="{Binding SignedText}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Orientation="Horizontal">
-                                        <ui:Button Padding="6" Appearance="Transparent" Command="{Binding OpenLocationCommand}" Icon="{ui:SymbolIcon Folder24}" ToolTip="Speicherort öffnen" />
-                                        <ui:Button Padding="6" Appearance="Transparent" Command="{Binding BlockRemoteCommand}" Icon="{ui:SymbolIcon Prohibited24}" ToolTip="Adresse in der Firewall blockieren" Visibility="{Binding CanBlockRemote, Converter={StaticResource BoolToVisibility}}" />
-                                        <ui:Button Padding="6" Appearance="Transparent" Command="{Binding BlockProgramCommand}" Icon="{ui:SymbolIcon PlugDisconnected24}" ToolTip="Programm den Internetzugang sperren" Visibility="{Binding CanBlockProgram, Converter={StaticResource BoolToVisibility}}" />
-                                        <ui:Button Padding="6" Appearance="Transparent" Command="{Binding KillCommand}" Icon="{ui:SymbolIcon Stop24}" ToolTip="Prozess beenden" />
-                                    </StackPanel>
+                            <Grid Margin="4,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="5*" />
+                                    <ColumnDefinition Width="4*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Ellipse Fill="{Binding View.Risk, Converter={StaticResource RiskToBrush}}" Style="{StaticResource Dot}" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource RowTitle}" Text="{Binding Process}" />
+                                    <TextBlock Style="{StaticResource MonoDetail}" Text="{Binding View.ProcessPath}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="12,0,0,0">
                                     <TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        Grid.ColumnSpan="3"
-                                        Margin="0,6,0,0"
-                                        FontSize="12"
-                                        Foreground="{Binding View.Risk, Converter={StaticResource RiskToBrush}}"
-                                        Text="{Binding Reasons}"
-                                        TextWrapping="Wrap"
-                                        Visibility="{Binding HasReasons, Converter={StaticResource BoolToVisibility}}" />
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                </Grid>
-                            </Border>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
-                                    <Setter TargetName="Row" Property="BorderThickness" Value="0" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
+                                        FontFamily="Cascadia Mono, Consolas"
+                                        FontSize="12.5"
+                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                        Text="{Binding Endpoint}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource RowDetail}" Text="{Binding SignedText}" />
+                                </StackPanel>
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Grid.ColumnSpan="2"
+                                    Margin="0,4,0,0"
+                                    FontSize="12"
+                                    Foreground="{Binding View.Risk, Converter={StaticResource RiskToBrush}}"
+                                    Text="{Binding Reasons}"
+                                    TextWrapping="Wrap"
+                                    Visibility="{Binding HasReasons, Converter={StaticResource BoolToVisibility}}" />
+                            </Grid>
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <TextBlock
+                    Margin="14,12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Keine Verbindungen für diesen Filter."
+                    Visibility="{Binding Connections.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=invert}" />
+            </Grid>
         </Border>
+
+        <!--  Actions for the selected connection  -->
+        <Grid Grid.Row="4" Margin="0,12,0,0">
+            <TextBlock
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="{Binding HiddenText, TargetNullValue='Wähle eine Verbindung aus, um sie zu beenden oder zu blockieren.'}" />
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility}}">
+                <ui:Button Margin="0,0,8,0" Command="{Binding OpenLocationCommand}" Content="Speicherort" Icon="{ui:SymbolIcon Folder24}" />
+                <ui:Button Margin="0,0,8,0" Command="{Binding BlockRemoteCommand}" Content="Adresse blockieren" Icon="{ui:SymbolIcon Prohibited24}" />
+                <ui:Button Margin="0,0,8,0" Command="{Binding BlockProgramCommand}" Content="Internet sperren" Icon="{ui:SymbolIcon PlugDisconnected24}" />
+                <ui:Button Appearance="Danger" Command="{Binding KillCommand}" Content="Prozess beenden" Icon="{ui:SymbolIcon Stop24}" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Page>

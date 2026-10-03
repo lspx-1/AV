@@ -113,8 +113,8 @@
                             </Ellipse.RenderTransform>
                         </Ellipse>
                         <Ellipse
-                            Fill="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                            Stroke="{DynamicResource CardStrokeColorDefaultBrush}"
+                            Fill="{DynamicResource BastionOrbBrush}"
+                            Stroke="{DynamicResource BastionPanelStrokeBrush}"
                             StrokeThickness="1" />
                         <ui:SymbolIcon
                             FontSize="64"

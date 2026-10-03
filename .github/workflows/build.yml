@@ -56,4 +56,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: Bastion-${{ github.ref_name }}-win-x64.zip
-          generate_release_notes: true
+          # Keep the notes written on GitHub; only attach the build.
+          generate_release_notes: false
