@@ -72,12 +72,17 @@ public sealed class EventJournal
             return _events.Take(max).ToList();
     }
 
-    /// <summary>Drops everything that is not an open finding, in memory and on disk.</summary>
-    public int Clear()
+    /// <summary>
+    /// Clears the history in memory and on disk. Unless <paramref name="includeOpen"/> is set, unresolved findings
+    /// of medium severity or higher (the ones the status page counts as threats) are kept.
+    /// </summary>
+    public int Clear(bool includeOpen = false)
     {
         lock (_lock)
         {
-            var keep = _events.Where(e => !e.IsResolved && e.Actions.Count > 0).ToList();
+            List<SecurityEvent> keep = includeOpen
+                ? []
+                : _events.Where(e => !e.IsResolved && e.Severity >= Severity.Medium && e.Actions.Count > 0).ToList();
             var removed = _events.Count - keep.Count;
             _events.Clear();
             foreach (var e in keep)

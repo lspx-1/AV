@@ -27,8 +27,10 @@ public interface IBastionBackend
 
     Task<IReadOnlyList<SecurityEvent>> GetEventsAsync(int max);
     Task<ActionResult> ExecuteEventActionAsync(Guid eventId, string action);
-    /// <summary>Removes resolved events from the history. Open findings that still wait for a decision are kept.</summary>
-    Task<int> ClearHistoryAsync();
+    /// <summary>
+    /// Clears the history. With <paramref name="includeOpen"/> false, findings that still wait for a decision are kept.
+    /// </summary>
+    Task<int> ClearHistoryAsync(bool includeOpen);
 
     Task<IReadOnlyList<QuarantineItem>> GetQuarantineAsync();
     Task<ActionResult> RestoreQuarantineAsync(Guid id, bool addExclusion);
