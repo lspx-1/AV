@@ -7,7 +7,8 @@ public sealed class NetworkMonitor(
     RemoteAccessAnalyzer analyzer,
     BeaconDetector beacons,
     Func<IReadOnlyList<TcpConnection>>? source = null,
-    Func<int, (string Name, string? Path)>? processResolver = null)
+    Func<int, (string Name, string? Path)>? processResolver = null,
+    DynamicDnsWatcher? dynamicDns = null)
 {
     private readonly Func<IReadOnlyList<TcpConnection>> _source = source ?? TcpTable.Read;
     private readonly Dictionary<TcpConnection, DateTimeOffset> _known = new();
@@ -21,6 +22,7 @@ public sealed class NetworkMonitor(
     /// <summary>Takes one snapshot. Returns findings that have not been reported before.</summary>
     public IReadOnlyList<NetworkFinding> Poll(DateTimeOffset now)
     {
+        dynamicDns?.RefreshIfDue(now);
         var connections = _source();
         var views = new List<ConnectionView>(connections.Count);
         var fresh = new List<NetworkFinding>();

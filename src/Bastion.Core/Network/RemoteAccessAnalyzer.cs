@@ -11,8 +11,26 @@ namespace Bastion.Core.Network;
 /// disguised as Windows processes and script hosts talking to the internet. It also points out legitimate
 /// remote-support tools, because scammers misuse them.
 /// </summary>
-public sealed class RemoteAccessAnalyzer(IpBlocklist blocklist, BeaconDetector beacons, Func<string, SignatureState> signatureCheck)
+public sealed class RemoteAccessAnalyzer(
+    IpBlocklist blocklist,
+    BeaconDetector beacons,
+    Func<string, SignatureState> signatureCheck,
+    DynamicDnsWatcher? dynamicDns = null,
+    Func<string, string?>? productInfo = null)
 {
+    private readonly Func<string, string?> _productInfo = productInfo ?? ReadProductInfo;
+    private readonly Dictionary<string, string?> _productCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lock _productLock = new();
+
+    /// <summary>Words in a file's version info that identify a remote-support product, whatever the file is called.</summary>
+    private static readonly (string Keyword, string Product)[] RemoteToolKeywords =
+    [
+        ("teamviewer", "TeamViewer"), ("anydesk", "AnyDesk"), ("rustdesk", "RustDesk"), ("screenconnect", "ScreenConnect"),
+        ("connectwise", "ConnectWise"), ("splashtop", "Splashtop"), ("ultraviewer", "UltraViewer"), ("logmein", "LogMeIn"),
+        ("supremo", "Supremo"), ("ammyy", "Ammyy Admin"), ("aeroadmin", "AeroAdmin"), ("remotepc", "RemotePC"),
+        ("meshagent", "MeshCentral"), ("atera", "Atera"), ("dwservice", "DWService"),
+    ];
+
     private static readonly string[] SystemProcessNames =
         ["svchost", "lsass", "csrss", "winlogon", "services", "smss", "wininit", "taskhostw", "spoolsv", "dllhost", "conhost", "explorer", "sihost", "fontdrvhost"];
 
@@ -24,6 +42,38 @@ public sealed class RemoteAccessAnalyzer(IpBlocklist blocklist, BeaconDetector b
         ("splashtopstreamer", "Splashtop"), ("ultraviewer_desktop", "UltraViewer"), ("logmein", "LogMeIn"), ("remoting_host", "Chrome Remotedesktop"),
         ("quickassist", "Windows-Remotehilfe"), ("supremo", "Supremo"),
     ];
+
+    private (string Keyword, string Product)? IdentifyByVersionInfo(string path)
+    {
+        string? info;
+        lock (_productLock)
+        {
+            if (!_productCache.TryGetValue(path, out info))
+                _productCache[path] = info = _productInfo(path);
+        }
+        if (info is null)
+            return null;
+        foreach (var (keyword, product) in RemoteToolKeywords)
+        {
+            if (info.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                return (keyword, product);
+        }
+        return null;
+    }
+
+    /// <summary>Product name, description, internal and original file name of an executable, joined into one string.</summary>
+    private static string? ReadProductInfo(string path)
+    {
+        try
+        {
+            var v = System.Diagnostics.FileVersionInfo.GetVersionInfo(path);
+            return string.Join('|', v.ProductName, v.FileDescription, v.InternalName, v.OriginalFilename, v.CompanyName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     public static bool IsPublic(IPAddress ip)
     {
@@ -130,9 +180,46 @@ public sealed class RemoteAccessAnalyzer(IpBlocklist blocklist, BeaconDetector b
                 connection.ProcessId, path, null));
         }
 
+        if (!listening && IsPublic(remote) && dynamicDns?.HostFor(remote) is { } dynHost && (untrusted || userFolder || ScriptHosts.Contains(processName, StringComparer.OrdinalIgnoreCase)))
+        {
+            Raise(ConnectionRisk.Suspicious, $"Verbindet sich mit einer Dynamic-DNS-Adresse ({dynHost})");
+            findings.Add(new NetworkFinding($"ddns:{programKey}:{dynHost}", Severity.Medium,
+                "Verbindung zu Dynamic-DNS-Adresse",
+                $"{processName} ist mit {dynHost} ({remote}) verbunden. Fernsteuerungs-Trojaner nutzen solche Adressen, damit der Angreifer seinen Server beliebig verschieben kann.",
+                connection.ProcessId, path, remote.ToString()));
+        }
+
         var tool = RemoteSupportTools.FirstOrDefault(t => processName.StartsWith(t.Process, StringComparison.OrdinalIgnoreCase));
+        var renamedTool = false;
+        if (tool.Product is null && path is not null && connection.State == TcpState.Established && IsPublic(remote))
+        {
+            var byInfo = IdentifyByVersionInfo(path);
+            if (byInfo is { } found)
+            {
+                tool = ("", found.Product);
+                // Only a different file name is a disguise; "MeshAgent.exe" really is MeshCentral.
+                renamedTool = !processName.Contains(found.Keyword, StringComparison.OrdinalIgnoreCase);
+            }
+        }
         if (tool.Product is not null && connection.State == TcpState.Established && IsPublic(remote))
         {
+            if (renamedTool)
+            {
+                Raise(ConnectionRisk.Dangerous, $"Fernwartungsprogramm ({tool.Product}) unter anderem Namen");
+                findings.Add(new NetworkFinding($"rat-tool-renamed:{programKey}", Severity.High,
+                    $"{tool.Product} unter falschem Namen",
+                    $"{processName}.exe ist in Wirklichkeit {tool.Product} und hat eine Verbindung zu {remote} aufgebaut. Betrüger und Angreifer benennen Fernwartungsprogramme um, damit sie nicht auffallen.",
+                    connection.ProcessId, path, remote.ToString()));
+            }
+            else if (untrusted || userFolder)
+            {
+                Raise(ConnectionRisk.Suspicious, $"Fernwartung ({tool.Product}) ohne Installation oder Signatur");
+                findings.Add(new NetworkFinding($"rat-tool-portable:{programKey}", Severity.Medium,
+                    $"{tool.Product} läuft ohne Installation",
+                    $"{tool.Product} wird aus {path} gestartet und ist verbunden. Angreifer legen solche Programme in Benutzerordner und starten sie versteckt. Beende die Sitzung, wenn du sie nicht selbst gestartet hast.",
+                    connection.ProcessId, path, remote.ToString()));
+            }
+
             Raise(ConnectionRisk.Info, $"Fernwartung ({tool.Product}) ist verbunden");
             findings.Add(new NetworkFinding($"rat-tool:{tool.Product}", Severity.Info,
                 $"{tool.Product} ist aktiv",

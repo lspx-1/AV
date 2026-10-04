@@ -73,14 +73,16 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
         });
 
         var beacons = new BeaconDetector();
-        _networkMonitor = new NetworkMonitor(new RemoteAccessAnalyzer(_ipBlocklist, beacons, Authenticode.Check), beacons);
+        var dynamicDns = new DynamicDnsWatcher();
+        var correlator = new PersistenceCorrelator();
+        _networkMonitor = new NetworkMonitor(new RemoteAccessAnalyzer(_ipBlocklist, beacons, Authenticode.Check, dynamicDns), beacons, dynamicDns: dynamicDns);
 
         foreach (var module in new IProtectionModule[]
                  {
                      new RealtimeFileGuard(this),
                      new ProcessGuard(this),
-                     new NetworkGuard(this, _networkMonitor),
-                     new AutostartGuard(this),
+                     new NetworkGuard(this, _networkMonitor, correlator),
+                     new AutostartGuard(this, correlator),
                      new RansomwareGuard(this),
                      new HostsGuard(this),
                  })
@@ -471,6 +473,8 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
     // ---------------------------------------------------------------- events & actions
 
     public Task<IReadOnlyList<SecurityEvent>> GetEventsAsync(int max) => Task.FromResult(_journal.Recent(max));
+
+    public Task<int> ClearHistoryAsync() => Task.FromResult(_journal.Clear());
 
     public Task<ActionResult> ExecuteEventActionAsync(Guid eventId, string action)
     {

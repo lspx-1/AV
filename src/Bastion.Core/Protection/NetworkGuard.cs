@@ -4,7 +4,7 @@ using Bastion.Core.Network;
 namespace Bastion.Core.Protection;
 
 /// <summary>Runs the network monitor every few seconds and turns findings into events.</summary>
-public sealed class NetworkGuard(IProtectionContext context, NetworkMonitor monitor) : ProtectionModuleBase(context)
+public sealed class NetworkGuard(IProtectionContext context, NetworkMonitor monitor, PersistenceCorrelator? correlator = null) : ProtectionModuleBase(context)
 {
     private Timer? _timer;
     private int _busy;
@@ -62,6 +62,7 @@ public sealed class NetworkGuard(IProtectionContext context, NetworkMonitor moni
                     Actions = actions,
                 });
             }
+            CorrelateWithAutostart();
         }
         catch (Exception e)
         {
@@ -70,6 +71,23 @@ public sealed class NetworkGuard(IProtectionContext context, NetworkMonitor moni
         finally
         {
             Volatile.Write(ref _busy, 0);
+        }
+    }
+
+    /// <summary>Tells the correlator which unsigned programs currently talk to the internet.</summary>
+    private void CorrelateWithAutostart()
+    {
+        if (correlator is null)
+            return;
+        var now = DateTimeOffset.Now;
+        foreach (var c in monitor.Current)
+        {
+            if (c.IsListening || c.ProcessPath is null || c.Signed == true
+                || !System.Net.IPAddress.TryParse(c.RemoteAddress, out var remote) || !Network.RemoteAccessAnalyzer.IsPublic(remote))
+                continue;
+            var link = correlator.NoteNetwork(c.ProcessPath, c.RemoteEndpoint, c.ProcessId, now);
+            if (link is not null)
+                Context.Raise(PersistenceCorrelator.ToEvent(link));
         }
     }
 }

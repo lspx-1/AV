@@ -101,6 +101,13 @@ public sealed class HeuristicDetector(Func<Sensitivity> sensitivity, Func<string
                 }
             }
 
+            var ratCapabilities = RatCapabilities(imports, pe.ImportedDlls);
+            if (ratCapabilities.Count >= 2 && HasNetworkImports(pe))
+            {
+                score += ratCapabilities.Count >= 3 ? 45 : 30;
+                reasons.Add($"Fernsteuerungs-Fähigkeiten und Netzwerkzugriff kombiniert ({string.Join(", ", ratCapabilities)})");
+            }
+
             if (KnownFolders.IsUserWritableLocation(context.Path))
             {
                 score += signature == SignatureState.Unsigned ? 10 : 5;
@@ -110,6 +117,31 @@ public sealed class HeuristicDetector(Func<Sensitivity> sensitivity, Func<string
 
         return Report(score, reasons);
     }
+
+    /// <summary>Capabilities that are typical for remote-access trojans (a harmless tool rarely needs several of them).</summary>
+    public static IReadOnlyList<string> RatCapabilities(IReadOnlySet<string> imports, IReadOnlySet<string>? dlls = null)
+    {
+        var found = new List<string>();
+        bool Any(params string[] names) => names.Any(imports.Contains);
+        if (Any("GetAsyncKeyState", "GetKeyboardState", "SetWindowsHookExA", "SetWindowsHookExW"))
+            found.Add("Tastatur mitlesen");
+        if (imports.Contains("BitBlt") && Any("GetDC", "GetWindowDC", "GetDesktopWindow"))
+            found.Add("Bildschirm aufnehmen");
+        if (Any("SendInput", "keybd_event", "mouse_event", "SetCursorPos"))
+            found.Add("Eingaben simulieren");
+        if (Any("capCreateCaptureWindowA", "capCreateCaptureWindowW") || (dlls?.Contains("avicap32.dll") ?? false))
+            found.Add("Webcam");
+        if (Any("waveInOpen", "waveInStart"))
+            found.Add("Mikrofon");
+        if (imports.Contains("GetClipboardData") && Any("SetClipboardViewer", "AddClipboardFormatListener"))
+            found.Add("Zwischenablage überwachen");
+        return found;
+    }
+
+    private static bool HasNetworkImports(PeFile pe) =>
+        pe.ImportedDlls.Any(d => d.Equals("ws2_32.dll", StringComparison.OrdinalIgnoreCase)
+                                 || d.Equals("wininet.dll", StringComparison.OrdinalIgnoreCase)
+                                 || d.Equals("winhttp.dll", StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<Detection> Report(int score, List<string> reasons)
     {

@@ -161,6 +161,7 @@ public sealed class PipeClientBackend : IBastionBackend, IDisposable
     public Task CancelScanAsync() => CallAsync(nameof(CancelScanAsync));
     public Task<IReadOnlyList<SecurityEvent>> GetEventsAsync(int max) => List<SecurityEvent>(nameof(GetEventsAsync), max);
     public Task<ActionResult> ExecuteEventActionAsync(Guid eventId, string action) => CallAsync<ActionResult>(nameof(ExecuteEventActionAsync), eventId, action);
+    public Task<int> ClearHistoryAsync() => CallAsync<int>(nameof(ClearHistoryAsync));
     public Task<IReadOnlyList<QuarantineItem>> GetQuarantineAsync() => List<QuarantineItem>(nameof(GetQuarantineAsync));
     public Task<ActionResult> RestoreQuarantineAsync(Guid id, bool addExclusion) => CallAsync<ActionResult>(nameof(RestoreQuarantineAsync), id, addExclusion);
     public Task<ActionResult> DeleteQuarantineAsync(Guid id) => CallAsync<ActionResult>(nameof(DeleteQuarantineAsync), id);
