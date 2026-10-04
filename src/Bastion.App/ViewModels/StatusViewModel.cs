@@ -21,6 +21,7 @@ public sealed partial class StatusViewModel : ObservableObject
     private readonly BackendSession _session;
     private readonly ISnackbarService _snackbar;
     private readonly DispatcherTimer _timer;
+    private string _recentSignature = "";
 
     public StatusViewModel(BackendSession session, ISnackbarService snackbar)
     {
@@ -119,9 +120,15 @@ public sealed partial class StatusViewModel : ObservableObject
             item.Update(m);
         }
 
-        RecentEvents.Clear();
-        foreach (var e in events.Where(e => e.Category != EventCategory.System || e.Severity > Severity.Info).Take(5))
-            RecentEvents.Add(new EventItemViewModel(e, _session, _snackbar));
+        var recent = events.Where(e => e.Category != EventCategory.System || e.Severity > Severity.Info).Take(5).ToList();
+        var signature = string.Join('|', recent.Select(e => $"{e.Id}:{e.Resolution}"));
+        if (signature != _recentSignature)
+        {
+            _recentSignature = signature;
+            RecentEvents.Clear();
+            foreach (var e in recent)
+                RecentEvents.Add(new EventItemViewModel(e, _session, _snackbar));
+        }
 
         if (status.CurrentScan is { Running: true } scan)
             OnScanProgress(scan);

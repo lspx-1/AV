@@ -33,24 +33,30 @@ public sealed partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearAsync()
     {
-        var dialog = new ContentDialog
-        {
-            Title = "Verlauf löschen?",
-            Content = "Alle erledigten Einträge werden entfernt. Offene Funde, über die du noch entscheiden musst, bleiben erhalten.",
-            PrimaryButtonText = "Löschen",
-            CloseButtonText = "Abbrechen",
-            DefaultButton = ContentDialogButton.Close,
-        };
-        if (await _dialogs.ShowAsync(dialog, CancellationToken.None) != ContentDialogResult.Primary)
-            return;
         try
         {
-            var removed = await _session.Backend.ClearHistoryAsync();
+            var dialog = new ContentDialog
+            {
+                Title = "Verlauf löschen?",
+                Content = "„Alles löschen“ entfernt jeden Eintrag. „Nur Erledigte“ lässt offene Funde stehen, über die du noch entscheiden musst.",
+                PrimaryButtonText = "Alles löschen",
+                SecondaryButtonText = "Nur Erledigte",
+                CloseButtonText = "Abbrechen",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            var choice = await _dialogs.ShowAsync(dialog, CancellationToken.None);
+            if (choice is not (ContentDialogResult.Primary or ContentDialogResult.Secondary))
+                return;
+            var removed = await _session.Backend.ClearHistoryAsync(includeOpen: choice == ContentDialogResult.Primary);
             _snackbar.Show("Verlauf gelöscht", $"{removed} Einträge entfernt.", ControlAppearance.Success, null, TimeSpan.FromSeconds(3));
         }
         catch (Exception ex)
         {
-            _snackbar.Show("Fehler", ex.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(5));
+            (System.Windows.Application.Current as App)?.LogError(ex);
+            var hint = ex.Message.Contains("Unbekannte Methode", StringComparison.Ordinal)
+                ? "Der installierte Bastion-Dienst ist älter als die App. Bitte mit dem neuen Installer aktualisieren."
+                : ex.Message;
+            _snackbar.Show("Verlauf konnte nicht gelöscht werden", hint, ControlAppearance.Danger, null, TimeSpan.FromSeconds(6));
             return;
         }
         await RefreshAsync();

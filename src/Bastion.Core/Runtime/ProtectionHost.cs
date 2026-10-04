@@ -474,7 +474,7 @@ public sealed class ProtectionHost : IBastionBackend, IProtectionContext, IDispo
 
     public Task<IReadOnlyList<SecurityEvent>> GetEventsAsync(int max) => Task.FromResult(_journal.Recent(max));
 
-    public Task<int> ClearHistoryAsync() => Task.FromResult(_journal.Clear());
+    public Task<int> ClearHistoryAsync(bool includeOpen) => Task.FromResult(_journal.Clear(includeOpen));
 
     public Task<ActionResult> ExecuteEventActionAsync(Guid eventId, string action)
     {
