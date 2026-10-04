@@ -142,12 +142,19 @@ public partial class App : Application
         _lastErrorShown = DateTime.UtcNow;
         try
         {
-            Services.GetRequiredService<ISnackbarService>().Show("Unerwarteter Fehler", e.Exception.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(6));
+            Services.GetRequiredService<ISnackbarService>().Show("Unerwarteter Fehler", Describe(e.Exception), ControlAppearance.Danger, null, TimeSpan.FromSeconds(6));
         }
         catch (Exception)
         {
             // Never crash while reporting a crash.
         }
+    }
+
+    /// <summary>Message plus exception type and the first stack frame, so a screenshot is enough to locate the bug.</summary>
+    private static string Describe(Exception exception)
+    {
+        var frame = exception.StackTrace?.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+        return $"{exception.GetType().Name}: {exception.Message}" + (frame is null ? "" : $"\n{frame}");
     }
 
     /// <summary>Writes to %LocalAppData%\Bastion\app-errors.log (at most 200 entries per run).</summary>

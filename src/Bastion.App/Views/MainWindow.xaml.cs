@@ -31,6 +31,21 @@ public partial class MainWindow : FluentWindow
         snackbar.SetSnackbarPresenter(SnackbarPresenter);
         dialogs.SetDialogHost(RootContentDialog);
 
+        // Fallback for moving the window: an internal error in the title bar can swallow its caption hit test.
+        TitleBar.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is not DependencyObject source || IsInsideButton(source))
+                return;
+            try
+            {
+                DragMove();
+            }
+            catch (InvalidOperationException)
+            {
+                // The mouse button was already released.
+            }
+        };
+
         Loaded += (_, _) =>
         {
             if (!_themeApplied)
@@ -57,6 +72,16 @@ public partial class MainWindow : FluentWindow
         Hide();
         ShowInTaskbar = true;
         Opacity = 1;
+    }
+
+    private static bool IsInsideButton(DependencyObject element)
+    {
+        for (var current = element; current is not null; current = current is Visual or System.Windows.Media.Media3D.Visual3D ? System.Windows.Media.VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
+        {
+            if (current is System.Windows.Controls.Primitives.ButtonBase)
+                return true;
+        }
+        return false;
     }
 
     public void ShowAndActivate()
@@ -86,7 +111,14 @@ public partial class MainWindow : FluentWindow
         {
             // Protection keeps running; the window just goes to the tray.
             e.Cancel = true;
-            Hide();
+            try
+            {
+                Hide();
+            }
+            catch (Exception ex)
+            {
+                (Application.Current as App)?.LogError(ex);
+            }
             return;
         }
         base.OnClosing(e);
