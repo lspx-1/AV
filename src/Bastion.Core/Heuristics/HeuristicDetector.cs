@@ -92,20 +92,21 @@ public sealed class HeuristicDetector(Func<Sensitivity> sensitivity, Func<string
                 score += 30;
                 reasons.Add("Kann Code in andere Prozesse schreiben");
             }
-            if (imports.Contains("SetWindowsHookExA") || imports.Contains("SetWindowsHookExW"))
-            {
-                if (imports.Contains("GetAsyncKeyState") || imports.Contains("GetKeyboardState"))
-                {
-                    score += 25;
-                    reasons.Add("Kann Tastatureingaben mitlesen");
-                }
-            }
 
-            var ratCapabilities = RatCapabilities(imports, pe.ImportedDlls);
-            if (ratCapabilities.Count >= 2 && HasNetworkImports(pe))
+            // Setup programs (Inno Setup, NSIS, WiX) import keyboard, screen and input APIs for their wizard windows
+            // and unpack into %TEMP%, so the capability checks below would flag every installer.
+            var installer = IsKnownInstaller(context.Content);
+            IReadOnlyList<string> ratCapabilities = installer ? [] : RatCapabilities(imports, pe.ImportedDlls);
+            if (ratCapabilities.Count >= 3 && HasNetworkImports(pe))
             {
-                score += ratCapabilities.Count >= 3 ? 45 : 30;
+                // Replaces the plain keylogger check so the same API is not counted twice.
+                score += 40;
                 reasons.Add($"Fernsteuerungs-Fähigkeiten und Netzwerkzugriff kombiniert ({string.Join(", ", ratCapabilities)})");
+            }
+            else if (!installer && ratCapabilities.Contains("Tastatur mitlesen"))
+            {
+                score += 25;
+                reasons.Add("Kann Tastatureingaben mitlesen");
             }
 
             if (KnownFolders.IsUserWritableLocation(context.Path))
@@ -123,7 +124,7 @@ public sealed class HeuristicDetector(Func<Sensitivity> sensitivity, Func<string
     {
         var found = new List<string>();
         bool Any(params string[] names) => names.Any(imports.Contains);
-        if (Any("GetAsyncKeyState", "GetKeyboardState", "SetWindowsHookExA", "SetWindowsHookExW"))
+        if (Any("SetWindowsHookExA", "SetWindowsHookExW") && Any("GetAsyncKeyState", "GetKeyboardState"))
             found.Add("Tastatur mitlesen");
         if (imports.Contains("BitBlt") && Any("GetDC", "GetWindowDC", "GetDesktopWindow"))
             found.Add("Bildschirm aufnehmen");
@@ -136,6 +137,23 @@ public sealed class HeuristicDetector(Func<Sensitivity> sensitivity, Func<string
         if (imports.Contains("GetClipboardData") && Any("SetClipboardViewer", "AddClipboardFormatListener"))
             found.Add("Zwischenablage überwachen");
         return found;
+    }
+
+    private static readonly byte[][] InstallerMarkers =
+    [
+        "Inno Setup Setup Data"u8.ToArray(), "Inno Setup Messages"u8.ToArray(), "Nullsoft Install System"u8.ToArray(),
+        "NullsoftInst"u8.ToArray(), "Wix Toolset"u8.ToArray(), "WixBurn"u8.ToArray(),
+    ];
+
+    public static bool IsKnownInstaller(byte[] content)
+    {
+        var span = content.AsSpan();
+        foreach (var marker in InstallerMarkers)
+        {
+            if (span.IndexOf(marker) >= 0)
+                return true;
+        }
+        return false;
     }
 
     private static bool HasNetworkImports(PeFile pe) =>

@@ -59,10 +59,19 @@ public class NetworkTests
     }
 
     [Fact]
+    public void InstallerStubsAreRecognised()
+    {
+        Assert.True(Bastion.Core.Heuristics.HeuristicDetector.IsKnownInstaller("MZ....Inno Setup Setup Data (6.4.0)...."u8.ToArray()));
+        Assert.False(Bastion.Core.Heuristics.HeuristicDetector.IsKnownInstaller("MZ....nothing special...."u8.ToArray()));
+    }
+
+    [Fact]
     public void RatCapabilitiesNeedSeveralTraits()
     {
-        var one = new HashSet<string> { "GetAsyncKeyState" };
-        var several = new HashSet<string> { "GetAsyncKeyState", "BitBlt", "GetDC", "SendInput" };
+        var one = new HashSet<string> { "SetWindowsHookExA", "GetAsyncKeyState" };
+        var several = new HashSet<string> { "SetWindowsHookExA", "GetAsyncKeyState", "BitBlt", "GetDC", "SendInput" };
+        // A key-state call alone is used by every GUI program and is not a capability on its own.
+        Assert.Empty(Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(new HashSet<string> { "GetKeyboardState" }));
         Assert.Single(Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(one));
         Assert.Equal(3, Bastion.Core.Heuristics.HeuristicDetector.RatCapabilities(several).Count);
     }
