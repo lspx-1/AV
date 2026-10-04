@@ -34,7 +34,7 @@ public partial class MainWindow : FluentWindow
         // Fallback for moving the window: an internal error in the title bar can swallow its caption hit test.
         TitleBar.MouseLeftButtonDown += (_, e) =>
         {
-            if (e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is not DependencyObject source || IsInsideButton(source))
+            if (e.ButtonState != System.Windows.Input.MouseButtonState.Pressed || e.OriginalSource is not DependencyObject source || IsInsideButton(source))
                 return;
             try
             {
@@ -76,7 +76,7 @@ public partial class MainWindow : FluentWindow
 
     private static bool IsInsideButton(DependencyObject element)
     {
-        for (var current = element; current is not null; current = current is Visual or System.Windows.Media.Media3D.Visual3D ? System.Windows.Media.VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
+        for (var current = element; current is not null; current = current is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D ? System.Windows.Media.VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
         {
             if (current is System.Windows.Controls.Primitives.ButtonBase)
                 return true;
